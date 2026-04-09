@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMO – INC-0040 Privilege Escalation via RBAC</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6f8;font-size:13px}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:200px;background:#fff;border-right:1px solid #e8e9ec;padding:16px 0;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto}
+.logo-wrap{padding:0 16px 16px;border-bottom:1px solid #e8e9ec;margin-bottom:8px}
+.logo{font-size:18px;font-weight:700;color:#1a1d2e;letter-spacing:-0.5px}
+.logo-sub{font-size:9px;color:#8b8fa8;letter-spacing:1px;text-transform:uppercase}
+.ns{padding:12px 16px 4px;font-size:10px;font-weight:600;color:#8b8fa8;letter-spacing:0.8px;text-transform:uppercase}
+.ni-item{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#4a4e69;font-size:12.5px;border-left:2px solid transparent;cursor:pointer}
+.ni-item:hover{background:#f5f6f8}
+.ni-item.ai{color:#6741d9}
+.ni-item.active{background:#eef2ff;color:#3b5bdb;border-left:2px solid #3b5bdb;font-weight:500}
+.ni{width:14px;height:14px;opacity:0.7;flex-shrink:0}
+.main{flex:1;margin-left:200px;overflow:auto}
+.topbar{background:#fff;border-bottom:1px solid #e8e9ec;height:50px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.bc{font-size:12px;color:#8b8fa8;display:flex;align-items:center;gap:4px}
+.bc span{color:#1a1d2e;font-weight:500}
+.bc a{color:#8b8fa8;text-decoration:none;cursor:pointer}
+.bc a:hover{color:#c92a2a}
+.tr{display:flex;align-items:center;gap:8px}
+.pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.pill-blue{background:#e8f4ff;color:#1971c2;border:1px solid #b8d8f5}
+.pill-green{background:#ebfbee;color:#2f9e44;border:1px solid #b2f2bb;display:flex;align-items:center;gap:4px}
+.av{width:28px;height:28px;border-radius:50%;background:#3b5bdb;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.content{padding:24px}
+.inc-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:16px}
+.inc-id-block{display:flex;align-items:flex-start;gap:12px}
+.inc-icon{width:44px;height:44px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.inc-title{font-size:18px;font-weight:600;color:#1a1d2e;margin-bottom:3px;line-height:1.3}
+.inc-sub{font-size:12.5px;color:#6b7280;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sev{font-size:11px;padding:2px 9px;border-radius:4px;font-weight:600}
+.sev-critical{background:#fee2e2;color:#991b1b}
+.hdr-actions{display:flex;gap:8px;flex-shrink:0}
+.btn-red{background:#c92a2a;color:#fff;border:none;padding:8px 14px;border-radius:6px;font-size:12.5px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:5px}
+.btn-red:hover{background:#b91c1c}
+.btn-ghost{background:#fff;color:#374151;border:1px solid #d1d5db;padding:7px 13px;border-radius:6px;font-size:12.5px;cursor:pointer}
+.btn-ghost:hover{background:#f9fafb}
+.btn-amber{background:#fff8dc;color:#92400e;border:1px solid #fcd34d;padding:7px 13px;border-radius:6px;font-size:12.5px;cursor:pointer;font-weight:500}
+.approval-bar{background:#fff8dc;border:1.5px solid #fcd34d;border-radius:8px;padding:13px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.appr-left{display:flex;align-items:center;gap:10px}
+.appr-icon{width:20px;height:20px;border-radius:50%;background:#f59e0b;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.appr-text{font-size:12.5px;color:#78350f;line-height:1.5}
+.appr-btns{display:flex;gap:8px;flex-shrink:0}
+.btn-approve{background:#2f9e44;color:#fff;border:none;padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+.btn-approve:hover{background:#276d38}
+.btn-reject{background:#fff;color:#c92a2a;border:1px solid #fca5a5;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer}
+.meta-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.meta-cell{background:#fff;border:1px solid #e8e9ec;border-radius:8px;padding:11px 14px}
+.mc-label{font-size:10.5px;color:#8b8fa8;font-weight:500;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:4px}
+.mc-val{font-size:13.5px;font-weight:600;color:#1a1d2e}
+.mc-sub{font-size:11px;color:#8b8fa8;margin-top:1px}
+.layout{display:grid;grid-template-columns:1fr 320px;gap:14px;margin-bottom:14px}
+.panel{background:#fff;border:1px solid #e8e9ec;border-radius:10px;overflow:hidden}
+.ph{padding:11px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.ph-title{font-size:13px;font-weight:600;color:#1a1d2e;display:flex;align-items:center;gap:6px}
+.pb{padding:14px 16px}
+.graph-wrap{background:#fafafa;border:1px solid #e8e9ec;border-radius:8px;padding:16px;margin-bottom:12px}
+.node-box{border-radius:7px;padding:7px 12px;font-size:11.5px;font-weight:500;display:flex;flex-direction:column;gap:1px;min-width:130px;flex-shrink:0}
+.nb-red{background:#fee2e2;border:1.5px solid #fca5a5;color:#991b1b}
+.nb-amber{background:#fef3c7;border:1.5px solid #fde68a;color:#92400e}
+.nb-blue{background:#e8f4ff;border:1.5px solid #b8d8f5;color:#1971c2}
+.nb-gray{background:#f3f4f6;border:1.5px solid #d1d5db;color:#374151}
+.nb-sub{font-size:10px;font-weight:400;opacity:0.8;margin-top:1px}
+.arrow{display:flex;align-items:center;padding:0 8px;color:#9ca3af;font-size:14px;flex-shrink:0}
+.arrow-down{display:flex;justify-content:center;padding:4px 0;color:#9ca3af;font-size:12px}
+.finding-list{display:flex;flex-direction:column;gap:8px}
+.finding{border-radius:8px;padding:11px 13px;border:1px solid}
+.f-critical{background:#fef2f2;border-color:#fca5a5}
+.f-high{background:#fffbeb;border-color:#fde68a}
+.f-medium{background:#f5f3ff;border-color:#ddd6fe}
+.f-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px}
+.f-title{font-size:12.5px;font-weight:600;color:#1a1d2e}
+.f-body{font-size:11.5px;color:#6b7280;line-height:1.5}
+.f-code{font-family:monospace;font-size:11px;background:#f3f4f6;padding:6px 10px;border-radius:5px;margin-top:6px;color:#374151;line-height:1.6;white-space:pre}
+.tag{font-size:10px;padding:2px 7px;border-radius:4px;font-weight:500}
+.t-red{background:#fee2e2;color:#991b1b}
+.t-amber{background:#fef3c7;color:#92400e}
+.t-gray{background:#f3f4f6;color:#374151}
+.t-blue{background:#e8f4ff;color:#1971c2}
+.t-green{background:#d1fae5;color:#065f46}
+.timeline{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f5}
+.tl-item:last-child{border-bottom:none}
+.tl-left{display:flex;flex-direction:column;align-items:center;flex-shrink:0;width:20px}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.tl-line{width:1px;flex:1;min-height:10px;background:#e8e9ec;margin:2px auto}
+.tl-dot-red{background:#ef4444}
+.tl-dot-amber{background:#f59e0b}
+.tl-dot-blue{background:#3b82f6}
+.tl-dot-gray{background:#9ca3af}
+.tl-time{font-size:10.5px;color:#9ca3af;margin-bottom:1px}
+.tl-text{font-size:12px;color:#374151;line-height:1.5}
+.rb-wrap{display:flex;flex-direction:column;gap:0}
+.rb-step{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f5}
+.rb-step:last-child{border-bottom:none}
+.rb-ind{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.rb-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.rb-done{background:#d1fae5;color:#065f46}
+.rb-active{background:#fef3c7;color:#92400e}
+.rb-wait{background:#f3f4f6;color:#9ca3af}
+.rb-line{width:1px;flex:1;min-height:10px;background:#e8e9ec;margin:2px auto}
+.rb-body{flex:1;padding-top:2px}
+.rb-name{font-size:12px;font-weight:500;color:#1a1d2e}
+.rb-detail{font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5}
+.rb-time{font-size:10.5px;color:#9ca3af;margin-top:2px}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.action-card{border:1px solid #e8e9ec;border-radius:8px;padding:12px;background:#fff}
+.action-card.proposed{border-color:#fde68a;background:#fffbeb}
+.ac-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.ac-name{font-size:12.5px;font-weight:600;color:#1a1d2e}
+.ac-desc{font-size:11.5px;color:#6b7280;line-height:1.5;margin-bottom:8px}
+.ac-footer{display:flex;align-items:center;justify-content:space-between}
+.ac-risk{font-size:11px;color:#8b8fa8}
+.btn-xs{font-size:11px;padding:4px 10px;border-radius:5px;cursor:pointer;font-weight:500;border:1px solid}
+.btn-xs-approve{background:#2f9e44;color:#fff;border-color:#2f9e44}
+.btn-xs-block{background:#f3f4f6;color:#6b7280;border-color:#e8e9ec;cursor:not-allowed}
+.affected-list{display:flex;flex-direction:column;gap:6px}
+.aff-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px}
+.aff-name{font-size:12px;font-weight:500;color:#1a1d2e}
+.aff-sub{font-size:11px;color:#8b8fa8}
+.agent-note{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 14px;display:flex;gap:10px;align-items:flex-start;margin-bottom:14px}
+.agent-note-icon{width:28px;height:28px;border-radius:8px;background:#6741d9;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.agent-note-text{font-size:12.5px;color:#3b3f6e;line-height:1.6}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo-wrap"><div class="logo">ARMO</div><div class="logo-sub">Powered by Kubescape</div></div>
+  <div class="ns">Visibility</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M5 3v10M1 7h14"/></svg>Inventory</div>
+  <div class="ns">Posture</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5v4c0 3 2.5 5 6 5s6-2 6-5V5L8 2z"/></svg>Security Risks</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14l4-4m0 0l2-6 4 2-2 6m-4-2l-2 2"/></svg>Attack Path</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>Vulnerabilities</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M3 8h6M3 12h8"/></svg>Compliance</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="3"/><path d="M11 11l-3-3M8 6h4M10 4v4"/></svg>Identities &amp; Roles</div>
+  <div class="ns">Prevention</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="12" height="8" rx="1"/><path d="M5 5V3.5a3 3 0 016 0V5"/></svg>Network Policies</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11V6a5 5 0 0110 0v5"/><rect x="1" y="11" width="14" height="4" rx="1"/></svg>Seccomp Profiles</div>
+  <div class="ns" style="color:#6741d9;font-weight:600">AI Agents</div>
+  <div class="ni-item ai"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/></svg>Agent Management</div>
+  <div class="ni-item ai"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8H2z"/><path d="M5 8h6M8 6v4"/></svg>Agent Policies</div>
+  <div class="ni-item ai"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12L5 4l3 5 2-3 4 6"/></svg>Activity Log</div>
+  <div class="ns">Threat Detection</div>
+  <div class="ni-item active"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13l2-5 3 3 2-6 3 8"/></svg>Runtime Incidents</div>
+  <div class="ns">Code</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l-2 2 2 2M12 6l2 2-2 2M9 4l-2 8"/></svg>Repository Scanning</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="8" rx="1.5"/><circle cx="8" cy="8" r="2"/></svg>Registry Scanning</div>
+  <div class="ns">Policies</div>
+  <div class="ni-item"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5v4c0 3 2.5 5 6 5s6-2 6-5V5L8 2z"/><path d="M6 8l1.5 1.5L10 6.5"/></svg>Risk Acceptance</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="bc">
+      <a href="armo_incident_response_agent.html">AI Agents</a>&nbsp;&rsaquo;&nbsp;
+      <a href="armo_incident_response_agent.html">Incident Response Agent</a>&nbsp;&rsaquo;&nbsp;
+      <a href="armo_incident_response_agent.html">Active incidents</a>&nbsp;&rsaquo;&nbsp;
+      <span>INC-0040</span>
+    </div>
+    <div class="tr">
+      <div style="font-size:12px;color:#8b8fa8">ARMO Platform</div>
+      <div class="pill pill-blue">Enterprise</div>
+      <div class="pill pill-green"><div style="width:7px;height:7px;border-radius:50%;background:#51cf66"></div>Healthy</div>
+      <div class="av">SL</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <div class="inc-header">
+      <div class="inc-id-block">
+        <div class="inc-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c92a2a" stroke-width="2"><path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+        </div>
+        <div>
+          <div style="font-size:11px;color:#8b8fa8;font-weight:500;margin-bottom:3px">INC-0040 &middot; Detected 22 min ago &middot; prod-us-east-1 / kube-system</div>
+          <div class="inc-title">Privilege escalation via RBAC misconfiguration</div>
+          <div class="inc-sub" style="margin-top:5px">
+            <span class="sev sev-critical">Critical</span>
+            <span style="color:#8b8fa8">&middot;</span>
+            <span>CVSS 8.8</span>
+            <span style="color:#8b8fa8">&middot;</span>
+            <span>Handled by Incident Response Agent</span>
+            <span style="color:#8b8fa8">&middot;</span>
+            <span style="color:#d97706;font-weight:500">&#9654; Analysis in progress &mdash; step 2 of 7</span>
+          </div>
+        </div>
+      </div>
+      <div class="hdr-actions">
+        <button class="btn-ghost">&#10515; Export</button>
+        <button class="btn-ghost">Create Jira</button>
+        <button class="btn-amber">&#9650; Escalate</button>
+        <button class="btn-red">
+          <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="10" height="10" rx="1"/></svg>
+          Contain now
+        </button>
+      </div>
+    </div>
+
+    <div class="approval-bar">
+      <div class="appr-left">
+        <div class="appr-icon"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5"><path d="M8 3v5M8 11v1"/></svg></div>
+        <div class="appr-text"><strong>Agent awaiting approval:</strong> Proposed action is to revoke <code>cluster-admin</code> binding from <code>sa/monitoring-agent</code> in kube-system. This will break the monitoring agent until the binding is corrected. <strong>Review details below before approving.</strong></div>
+      </div>
+      <div class="appr-btns">
+        <button class="btn-reject">Reject</button>
+        <button class="btn-approve">&#10003; Approve</button>
+      </div>
+    </div>
+
+    <div class="meta-strip">
+      <div class="meta-cell"><div class="mc-label">Status</div><div class="mc-val" style="color:#d97706">Analyzing</div><div class="mc-sub">Blast radius mapping</div></div>
+      <div class="meta-cell"><div class="mc-label">Detected</div><div class="mc-val">08:36:11</div><div class="mc-sub">22 min ago</div></div>
+      <div class="meta-cell"><div class="mc-label">Affected resources</div><div class="mc-val" style="color:#c92a2a">7</div><div class="mc-sub">4 pods, 2 SA, 1 role</div></div>
+      <div class="meta-cell"><div class="mc-label">Attack vector</div><div class="mc-val">RBAC</div><div class="mc-sub">ClusterRoleBinding</div></div>
+      <div class="meta-cell"><div class="mc-label">Jira ticket</div><div class="mc-val" style="color:#1971c2;font-size:13px">SEC-4905</div><div class="mc-sub">Auto-created 08:36:24</div></div>
+    </div>
+
+    <div class="agent-note">
+      <div class="agent-note-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="1.8"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/></svg></div>
+      <div class="agent-note-text"><strong>Agent analysis:</strong> A <code>ClusterRoleBinding</code> named <code>monitoring-agent-crb</code> incorrectly grants <code>cluster-admin</code> to <code>sa/monitoring-agent</code>. This service account is accessible from the <code>payments-processor</code> pod, which has a known container escape vector (CVE-2024-21626). If exploited, an attacker could gain full cluster control. Recommended immediate action: revoke the binding and replace with a scoped role. Monitoring service will need a corrected <code>ClusterRole</code> with only the required verbs.</div>
+    </div>
+
+    <div class="layout">
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="panel">
+          <div class="ph">
+            <div class="ph-title"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#c92a2a" stroke-width="1.8"><path d="M2 14l4-4m0 0l2-6 4 2-2 6m-4-2l-2 2"/></svg>Attack path &amp; blast radius</div>
+            <span class="tag t-red">7 resources at risk</span>
+          </div>
+          <div class="pb">
+            <div class="graph-wrap">
+              <div style="font-size:11px;color:#8b8fa8;margin-bottom:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Privilege escalation chain</div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="node-box nb-amber"><span>payments-processor pod</span><span class="nb-sub">kube-system &middot; CVE-2024-21626</span></div>
+                  <div class="arrow">&rarr;</div>
+                  <div class="node-box nb-red"><span>sa/monitoring-agent</span><span class="nb-sub">Mounts pod service account</span></div>
+                </div>
+                <div style="padding-left:69px"><div class="arrow-down">&#8595;</div></div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <div class="node-box nb-red" style="min-width:200px"><span>monitoring-agent-crb</span><span class="nb-sub">ClusterRoleBinding &rarr; cluster-admin</span></div>
+                  <div class="arrow">&rarr;</div>
+                  <div class="node-box nb-red"><span>Full cluster control</span><span class="nb-sub">All namespaces, all verbs</span></div>
+                </div>
+                <div style="padding-left:50px"><div class="arrow-down">&#8595;</div></div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <div class="node-box nb-amber" style="min-width:100px;font-size:10.5px"><span>api-server</span><span class="nb-sub">Full access</span></div>
+                  <div class="node-box nb-amber" style="min-width:100px;font-size:10.5px"><span>etcd secrets</span><span class="nb-sub">Read/write</span></div>
+                  <div class="node-box nb-gray" style="min-width:100px;font-size:10.5px"><span>all namespaces</span><span class="nb-sub">4 more clusters</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="finding-list">
+              <div class="finding f-critical">
+                <div class="f-top"><div class="f-title">Overprivileged ClusterRoleBinding</div><span class="tag t-red">Critical</span></div>
+                <div class="f-body"><code>monitoring-agent-crb</code> grants <code>cluster-admin</code> to <code>sa/monitoring-agent</code>. This is the root cause — the binding should scope to monitoring verbs only.</div>
+                <div class="f-code">kind: ClusterRoleBinding
+metadata:
+  name: monitoring-agent-crb
+subjects:
+- kind: ServiceAccount
+  name: monitoring-agent      # &larr; this SA is over-privileged
+  namespace: kube-system
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin          # &larr; should be a scoped role</div>
+              </div>
+              <div class="finding f-high">
+                <div class="f-top"><div class="f-title">Container escape vector in same namespace</div><span class="tag t-amber">High</span></div>
+                <div class="f-body"><code>payments-processor</code> is affected by CVE-2024-21626 (runc escape). Combined with the misconfigured RBAC, this creates a complete privilege escalation chain from container to cluster-admin.</div>
+              </div>
+              <div class="finding f-medium">
+                <div class="f-top"><div class="f-title">4 additional pods share this namespace</div><span class="tag" style="background:#ede9fe;color:#5b21b6">Medium</span></div>
+                <div class="f-body">Pods <code>log-collector</code>, <code>metrics-exporter</code>, <code>config-sync</code>, <code>health-checker</code> all run in kube-system and could access the same service account token if the escape is exploited.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div class="ph-title">Proposed remediation actions</div><span style="font-size:11px;color:#8b8fa8">2 require approval &middot; 2 autonomous</span></div>
+          <div class="pb">
+            <div class="action-grid">
+              <div class="action-card proposed">
+                <div class="ac-top"><div class="ac-name">Revoke cluster-admin binding</div><span class="tag t-amber">Needs approval</span></div>
+                <div class="ac-desc">Delete <code>monitoring-agent-crb</code> and replace with a scoped <code>ClusterRole</code> allowing only metrics read verbs. Monitoring will have reduced access for ~2 min during update.</div>
+                <div class="ac-footer"><div class="ac-risk" style="color:#d97706">&#9888; Service impact: low</div><button class="btn-xs btn-xs-approve">&#10003; Approve</button></div>
+              </div>
+              <div class="action-card proposed">
+                <div class="ac-top"><div class="ac-name">Patch payments-processor image</div><span class="tag t-amber">Needs approval</span></div>
+                <div class="ac-desc">Redeploy <code>payments-processor</code> with patched runc runtime to close CVE-2024-21626. Rolling restart, no downtime expected.</div>
+                <div class="ac-footer"><div class="ac-risk" style="color:#d97706">&#9888; Rolling restart</div><button class="btn-xs btn-xs-approve">&#10003; Approve</button></div>
+              </div>
+              <div class="action-card">
+                <div class="ac-top"><div class="ac-name">Alert Slack #security-incidents</div><span class="tag t-green">Done</span></div>
+                <div class="ac-desc">Notification sent automatically at 08:36:24. Thread contains full context, CVSS score, and a link to this incident.</div>
+                <div class="ac-footer"><div class="ac-risk">Autonomous action</div><button class="btn-xs btn-xs-block" disabled>Completed</button></div>
+              </div>
+              <div class="action-card">
+                <div class="ac-top"><div class="ac-name">Create Jira ticket SEC-4905</div><span class="tag t-green">Done</span></div>
+                <div class="ac-desc">Ticket created in SEC project with full incident details, assigned to on-call engineer, priority set to Critical.</div>
+                <div class="ac-footer"><div class="ac-risk">Autonomous action</div><button class="btn-xs btn-xs-block" disabled>Completed</button></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+
+        <div class="panel">
+          <div class="ph"><div class="ph-title">Runbook progress</div><span class="tag t-amber">Step 2 of 7</span></div>
+          <div class="pb" style="padding:10px 14px">
+            <div class="rb-wrap">
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-done">&#10003;</div><div class="rb-line"></div></div><div class="rb-body"><div class="rb-name">Detection &amp; alert</div><div class="rb-detail">RBAC anomaly detected via audit log</div><div class="rb-time">08:36:11 &middot; 13s</div></div></div>
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-active">2</div><div class="rb-line"></div></div><div class="rb-body"><div class="rb-name" style="color:#d97706">Blast radius mapping</div><div class="rb-detail">Identifying all affected resources and lateral paths</div><div class="rb-time" style="color:#d97706">In progress &middot; 22 min</div></div></div>
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-wait">3</div><div class="rb-line"></div></div><div class="rb-body"><div class="rb-name" style="color:#9ca3af">Severity reclassification</div></div></div>
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-wait">4</div><div class="rb-line"></div></div><div class="rb-body"><div class="rb-name" style="color:#9ca3af">Revoke binding (approval req.)</div></div></div>
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-wait">5</div><div class="rb-line"></div></div><div class="rb-body"><div class="rb-name" style="color:#9ca3af">Patch vulnerable image</div></div></div>
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-wait">6</div><div class="rb-line"></div></div><div class="rb-body"><div class="rb-name" style="color:#9ca3af">Verify containment</div></div></div>
+              <div class="rb-step"><div class="rb-ind"><div class="rb-dot rb-wait">7</div></div><div class="rb-body"><div class="rb-name" style="color:#9ca3af">Post-incident report</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div class="ph-title">Event timeline</div></div>
+          <div class="pb" style="padding:10px 14px">
+            <div class="timeline">
+              <div class="tl-item"><div class="tl-left"><div class="tl-dot tl-dot-red"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-time">08:36:11</div><div class="tl-text">Audit log flagged unexpected <code>cluster-admin</code> binding creation on <code>sa/monitoring-agent</code></div></div></div>
+              <div class="tl-item"><div class="tl-left"><div class="tl-dot tl-dot-blue"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-time">08:36:24</div><div class="tl-text">Agent auto-created Jira <strong>SEC-4905</strong> and posted to #security-incidents</div></div></div>
+              <div class="tl-item"><div class="tl-left"><div class="tl-dot tl-dot-amber"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-time">08:36:31</div><div class="tl-text">Agent correlated CVE-2024-21626 on <code>payments-processor</code> — elevated to Critical</div></div></div>
+              <div class="tl-item"><div class="tl-left"><div class="tl-dot tl-dot-amber"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-time">08:37:05</div><div class="tl-text">Blast radius mapped: 4 pods, 2 service accounts, 1 ClusterRoleBinding affected</div></div></div>
+              <div class="tl-item"><div class="tl-left"><div class="tl-dot tl-dot-blue"></div><div class="tl-line"></div></div><div class="tl-body"><div class="tl-time">08:37:22</div><div class="tl-text">Agent proposed 2 remediation actions — awaiting human approval</div></div></div>
+              <div class="tl-item"><div class="tl-left"><div class="tl-dot tl-dot-gray"></div></div><div class="tl-body"><div class="tl-time">08:58:11 &mdash; now</div><div class="tl-text" style="color:#d97706">Pending approval to proceed with binding revocation</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="ph"><div class="ph-title">Affected resources</div><span class="tag t-red">7 total</span></div>
+          <div class="pb" style="padding:10px 14px">
+            <div class="affected-list">
+              <div class="aff-item" style="border-color:#fca5a5;background:#fef2f2"><div><div class="aff-name">monitoring-agent-crb</div><div class="aff-sub">ClusterRoleBinding &middot; root cause</div></div><span class="tag t-red">Root cause</span></div>
+              <div class="aff-item" style="border-color:#fca5a5;background:#fef2f2"><div><div class="aff-name">sa/monitoring-agent</div><div class="aff-sub">ServiceAccount &middot; kube-system</div></div><span class="tag t-red">Compromised</span></div>
+              <div class="aff-item" style="border-color:#fde68a;background:#fffbeb"><div><div class="aff-name">payments-processor</div><div class="aff-sub">Pod &middot; CVE-2024-21626</div></div><span class="tag t-amber">Vulnerable</span></div>
+              <div class="aff-item"><div><div class="aff-name">log-collector</div><div class="aff-sub">Pod &middot; kube-system</div></div><span class="tag t-gray">Exposed</span></div>
+              <div class="aff-item"><div><div class="aff-name">metrics-exporter</div><div class="aff-sub">Pod &middot; kube-system</div></div><span class="tag t-gray">Exposed</span></div>
+              <div class="aff-item"><div><div class="aff-name">config-sync</div><div class="aff-sub">Pod &middot; kube-system</div></div><span class="tag t-gray">Exposed</span></div>
+              <div class="aff-item"><div><div class="aff-name">sa/log-collector-sa</div><div class="aff-sub">ServiceAccount &middot; lateral risk</div></div><span class="tag t-gray">Exposed</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+</body>
+</html>
