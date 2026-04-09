@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMO – AI Agent Management</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6f8}
+.shell{display:flex;min-height:100vh;font-size:13px}
+.sidebar{width:200px;background:#fff;border-right:1px solid #e8e9ec;padding:16px 0;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto}
+.sidebar-logo{padding:0 16px 16px;border-bottom:1px solid #e8e9ec;margin-bottom:8px}
+.logo-text{font-size:18px;font-weight:700;color:#1a1d2e;letter-spacing:-0.5px}
+.logo-sub{font-size:9px;color:#8b8fa8;letter-spacing:1px;text-transform:uppercase}
+.nav-section{padding:12px 16px 4px;font-size:10px;font-weight:600;color:#8b8fa8;letter-spacing:0.8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#4a4e69;cursor:pointer;font-size:12.5px;border-left:2px solid transparent}
+.nav-item:hover{background:#f5f6f8;color:#1a1d2e}
+.nav-item.active{background:#eef2ff;color:#3b5bdb;border-left:2px solid #3b5bdb;font-weight:500}
+.nav-item.ai-section{color:#6741d9}
+.nav-item.ai-section.active{background:#f3f0ff;color:#6741d9;border-left:2px solid #6741d9}
+.nav-icon{width:14px;height:14px;opacity:0.7;flex-shrink:0}
+.main{flex:1;margin-left:200px;overflow:auto}
+.topbar{background:#fff;border-bottom:1px solid #e8e9ec;padding:0 24px;height:50px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.topbar-left{display:flex;align-items:center;gap:12px}
+.breadcrumb{font-size:12px;color:#8b8fa8}
+.breadcrumb span{color:#1a1d2e;font-weight:500}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.badge-enterprise{background:#e8f4ff;color:#1971c2;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid #b8d8f5;font-weight:500}
+.badge-healthy{background:#ebfbee;color:#2f9e44;font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid #b2f2bb;font-weight:500;display:flex;align-items:center;gap:4px}
+.content{padding:24px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:600;color:#1a1d2e}
+.page-desc{font-size:12.5px;color:#6b7280;margin-top:2px}
+.btn-primary{background:#3b5bdb;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#2f4bbf}
+.btn-secondary{background:#fff;color:#374151;border:1px solid #d1d5db;padding:6px 14px;border-radius:6px;font-size:12.5px;cursor:pointer}
+.btn-secondary:hover{background:#f9fafb}
+.smart-banner{background:#f0f4ff;border:1px solid #c7d2fe;border-radius:8px;padding:12px 16px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.banner-text{font-size:12.5px;color:#3b3f6e;display:flex;align-items:center;gap:8px}
+.banner-icon{width:18px;height:18px;background:#6741d9;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-banner{background:#6741d9;color:#fff;border:none;padding:7px 14px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn-banner:hover{background:#5b35c0}
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:#fff;border:1px solid #e8e9ec;border-radius:8px;padding:14px 16px}
+.stat-label{font-size:11px;color:#8b8fa8;font-weight:500;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px}
+.stat-val{font-size:22px;font-weight:600;color:#1a1d2e}
+.stat-sub{font-size:11px;margin-top:2px}
+.stat-green{color:#2f9e44}
+.stat-amber{color:#e67700}
+.stat-red{color:#c92a2a}
+.stat-purple{color:#6741d9}
+.filters{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{background:#fff;border:1px solid #d1d5db;border-radius:20px;padding:5px 12px;font-size:12px;color:#374151;cursor:pointer;display:flex;align-items:center;gap:4px}
+.filter-chip:hover{border-color:#6741d9;color:#6741d9}
+.agents-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px}
+.agent-card{background:#fff;border:1px solid #e8e9ec;border-radius:10px;padding:16px;cursor:pointer;transition:border-color 0.15s}
+.agent-card:hover{border-color:#6741d9}
+.agent-card.selected{border-color:#6741d9;box-shadow:0 0 0 2px #ede9fe}
+.agent-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.agent-avatar{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0}
+.av-purple{background:#f3f0ff;color:#6741d9}
+.av-blue{background:#e8f4ff;color:#1971c2}
+.av-teal{background:#e6fcf5;color:#099268}
+.av-amber{background:#fff9db;color:#e67700}
+.av-gray{background:#f8f9fa;color:#6b7280}
+.av-red{background:#fef2f2;color:#c92a2a}
+.status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.dot-green{background:#51cf66}
+.dot-amber{background:#fcc419}
+.dot-gray{background:#ced4da}
+.dot-red{background:#ff6b6b}
+.agent-name{font-size:13.5px;font-weight:600;color:#1a1d2e;margin-bottom:2px}
+.agent-role{font-size:11.5px;color:#6741d9;font-weight:500;margin-bottom:8px}
+.agent-desc{font-size:11.5px;color:#6b7280;line-height:1.5;margin-bottom:12px}
+.agent-tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.tag{background:#f3f4f6;color:#374151;font-size:10.5px;padding:2px 8px;border-radius:4px;font-weight:500}
+.tag-perm{background:#fdf4ff;color:#9c36b5}
+.agent-footer{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f3f4f6;padding-top:10px;margin-top:4px}
+.agent-meta{font-size:11px;color:#8b8fa8}
+.agent-actions{display:flex;gap:6px}
+.btn-icon{background:none;border:1px solid #e8e9ec;border-radius:5px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:13px}
+.btn-icon:hover{border-color:#6741d9;color:#6741d9}
+.new-agent-card{background:#fafafa;border:1.5px dashed #d1d5db;border-radius:10px;padding:16px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;gap:8px;transition:all 0.15s}
+.new-agent-card:hover{border-color:#6741d9;background:#f3f0ff}
+.new-icon{width:36px;height:36px;border-radius:8px;background:#ede9fe;display:flex;align-items:center;justify-content:center;font-size:20px;color:#6741d9}
+.new-label{font-size:13px;font-weight:500;color:#6741d9}
+.new-sub{font-size:11.5px;color:#8b8fa8}
+.detail-panel{background:#fff;border:1px solid #e8e9ec;border-radius:10px;padding:20px;margin-bottom:20px;display:none}
+.detail-panel.visible{display:block}
+.panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid #f3f4f6}
+.panel-tabs{display:flex;gap:0;border-bottom:1px solid #e8e9ec;margin-bottom:16px}
+.panel-tab{padding:8px 16px;font-size:12.5px;color:#6b7280;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.panel-tab:hover{color:#6741d9}
+.panel-tab.active{color:#6741d9;border-bottom:2px solid #6741d9;font-weight:500}
+.perm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.perm-item{display:flex;align-items:center;justify-content:space-between;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:10px 12px}
+.perm-name{font-size:12.5px;color:#374151;font-weight:500}
+.perm-scope{font-size:11px;color:#8b8fa8;margin-top:1px}
+.toggle{width:34px;height:18px;border-radius:9px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s}
+.toggle.on{background:#6741d9}
+.toggle.off{background:#d1d5db}
+.toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;transition:left 0.15s}
+.toggle.on::after{left:18px}
+.toggle.off::after{left:2px}
+.section-label{font-size:11px;font-weight:600;color:#8b8fa8;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px}
+.context-box{background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:12px;font-size:12px;color:#374151;line-height:1.6;font-family:monospace}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:999;align-items:center;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;width:540px;max-width:95vw;padding:24px;max-height:90vh;overflow-y:auto}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-text">ARMO</div>
+    <div class="logo-sub">Powered by Kubescape</div>
+  </div>
+  <div class="nav-section">Visibility</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M5 3v10M1 7h14"/></svg>Inventory</div>
+  <div class="nav-section">Posture</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5v4c0 3 2.5 5 6 5s6-2 6-5V5L8 2z"/></svg>Security Risks</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14l4-4m0 0l2-6 4 2-2 6m-4-2l-2 2M8 4a1 1 0 100-2 1 1 0 000 2z"/></svg>Attack Path</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>Vulnerabilities</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M3 8h6M3 12h8"/></svg>Compliance</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="3"/><path d="M11 11l-3-3"/><path d="M8 6h4M10 4v4"/></svg>Identities &amp; Roles</div>
+  <div class="nav-section">Prevention</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="12" height="8" rx="1"/><path d="M5 5V3.5a3 3 0 016 0V5"/></svg>Network Policies</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11V6a5 5 0 0110 0v5"/><rect x="1" y="11" width="14" height="4" rx="1"/></svg>Seccomp Profiles</div>
+  <div class="nav-section" style="color:#6741d9;font-weight:600">AI Agents</div>
+  <div class="nav-item ai-section active"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/><path d="M8 8v2m-2 0h4"/></svg>Agent Management</div>
+  <div class="nav-item ai-section"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8H2z"/><path d="M5 8h6M8 6v4"/></svg>Agent Policies</div>
+  <div class="nav-item ai-section"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12L5 4l3 5 2-3 4 6"/></svg>Activity Log</div>
+  <div class="nav-section">Threat Detection</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13l2-5 3 3 2-6 3 8"/></svg>Runtime Incidents</div>
+  <div class="nav-section">Code</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l-2 2 2 2M12 6l2 2-2 2M9 4l-2 8"/></svg>Repository Scanning</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="8" rx="1.5"/><circle cx="8" cy="8" r="2"/></svg>Registry Scanning</div>
+  <div class="nav-section">Policies</div>
+  <div class="nav-item"><svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5v4c0 3 2.5 5 6 5s6-2 6-5V5L8 2z"/><path d="M6 8l1.5 1.5L10 6.5"/></svg>Risk Acceptance</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="breadcrumb">AI Agents &rsaquo; <span>Agent Management</span></div>
+    </div>
+    <div class="topbar-right">
+      <div style="font-size:12px;color:#8b8fa8">ARMO Platform</div>
+      <div class="badge-enterprise">Enterprise</div>
+      <div class="badge-healthy"><div style="width:7px;height:7px;border-radius:50%;background:#51cf66"></div>Healthy</div>
+      <div style="width:28px;height:28px;border-radius:50%;background:#3b5bdb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:600">SL</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">AI Agent Management</div>
+        <div class="page-desc">Create, configure, and monitor autonomous AI agents across your Kubernetes environment</div>
+      </div>
+      <button class="btn-primary" onclick="toggleCreateModal()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2"><path d="M8 2v12M2 8h12"/></svg>
+        New Agent
+      </button>
+    </div>
+
+    <div class="smart-banner">
+      <div class="banner-text">
+        <div class="banner-icon"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5"><path d="M8 3v5M8 11v1"/></svg></div>
+        <strong>2 agents</strong>&nbsp;are requesting elevated permissions — review and approve to maintain least-privilege posture.
+      </div>
+      <button class="btn-banner">Review Requests</button>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Agents</div>
+        <div class="stat-val">7</div>
+        <div class="stat-sub stat-purple">5 active · 2 idle</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Actions (24h)</div>
+        <div class="stat-val">1,284</div>
+        <div class="stat-sub stat-green">+12% vs yesterday</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Perm Violations</div>
+        <div class="stat-val">3</div>
+        <div class="stat-sub stat-amber">2 pending review</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Blocked Actions</div>
+        <div class="stat-val">18</div>
+        <div class="stat-sub stat-red">Policy-enforced</div>
+      </div>
+    </div>
+
+    <div class="filters">
+      <div class="filter-chip">Status &#9660;</div>
+      <div class="filter-chip">Role &#9660;</div>
+      <div class="filter-chip">Cluster &#9660;</div>
+      <div class="filter-chip">Namespace &#9660;</div>
+      <div class="filter-chip">Permission scope &#9660;</div>
+      <div style="margin-left:auto">
+        <button class="btn-secondary">Save filters</button>
+      </div>
+    </div>
+
+    <!-- DETAIL PANEL -->
+    <div id="detailPanel" class="detail-panel">
+      <div class="panel-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="agent-avatar av-purple" style="font-size:18px">R</div>
+          <div>
+            <div class="agent-name" style="font-size:15px">Risk Remediation Agent</div>
+            <div style="font-size:12px;color:#6741d9;font-weight:500">Autonomous Remediator</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;margin-left:8px"><div class="status-dot dot-green"></div><span style="font-size:12px;color:#2f9e44">Active</span></div>
+        </div>
+        <button class="btn-icon" onclick="closePanel()" style="width:28px;height:28px;font-size:18px">&times;</button>
+      </div>
+      <div class="panel-tabs">
+        <div class="panel-tab active" onclick="switchTab(this,'overview')">Overview</div>
+        <div class="panel-tab" onclick="switchTab(this,'permissions')">Permissions</div>
+        <div class="panel-tab" onclick="switchTab(this,'context')">Context</div>
+        <div class="panel-tab" onclick="switchTab(this,'activity')">Activity</div>
+      </div>
+      <div id="tab-overview">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div>
+            <div class="section-label">Description</div>
+            <p style="font-size:12.5px;color:#374151;line-height:1.6;margin-bottom:16px">Monitors Security Risks and autonomously applies safe remediations. Integrates with Jira for ticketing and notifies via Slack. Operates under Smart Remediation constraints.</p>
+            <div class="section-label">Assigned role</div>
+            <div style="display:flex;gap:6px;margin-bottom:16px"><span class="tag tag-perm">remediator</span><span class="tag tag-perm">read-only-audit</span></div>
+            <div class="section-label">Clusters in scope</div>
+            <div style="display:flex;gap:6px"><span class="tag">prod-us-east-1</span><span class="tag">staging-eu</span></div>
+          </div>
+          <div>
+            <div class="section-label">Agent stats</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+              <div class="stat-card" style="padding:10px 12px"><div class="stat-label">Actions today</div><div style="font-size:18px;font-weight:600;color:#1a1d2e">142</div></div>
+              <div class="stat-card" style="padding:10px 12px"><div class="stat-label">Issues fixed</div><div style="font-size:18px;font-weight:600;color:#1a1d2e">38</div></div>
+              <div class="stat-card" style="padding:10px 12px"><div class="stat-label">Violations</div><div style="font-size:18px;font-weight:600;color:#c92a2a">1</div></div>
+              <div class="stat-card" style="padding:10px 12px"><div class="stat-label">Last active</div><div style="font-size:18px;font-weight:600;color:#1a1d2e">2m</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="tab-permissions" style="display:none">
+        <div class="section-label" style="margin-bottom:12px">Permission grants</div>
+        <div class="perm-grid">
+          <div class="perm-item"><div><div class="perm-name">Read security risks</div><div class="perm-scope">All namespaces</div></div><button class="toggle on"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Apply remediations</div><div class="perm-scope">Smart Remediation only</div></div><button class="toggle on"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Create Jira tickets</div><div class="perm-scope">Linked integration</div></div><button class="toggle on"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Send Slack alerts</div><div class="perm-scope">Linked integration</div></div><button class="toggle on"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Modify RBAC</div><div class="perm-scope">Restricted</div></div><button class="toggle off"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Delete workloads</div><div class="perm-scope">Disabled</div></div><button class="toggle off"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Network policy edits</div><div class="perm-scope">Read only</div></div><button class="toggle off"></button></div>
+          <div class="perm-item"><div><div class="perm-name">Secret access</div><div class="perm-scope">Vault-mediated</div></div><button class="toggle on"></button></div>
+        </div>
+      </div>
+      <div id="tab-context" style="display:none">
+        <div class="section-label" style="margin-bottom:8px">Agent system context</div>
+        <div class="context-box">You are a Kubernetes security remediation agent operating within the ARMO platform. Your scope is limited to clusters: prod-us-east-1, staging-eu. You may only apply remediations flagged as "Smart Remediation" safe. Never modify RBAC policies, secrets, or network policies without explicit human approval. For each action, log a rationale. Escalate critical-severity issues to the security team via Slack #security-alerts before acting. You have read access to all namespaces and write access constrained to workload patches only.</div>
+        <div style="margin-top:16px">
+          <div class="section-label" style="margin-bottom:8px">Knowledge sources</div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:8px 12px"><div style="font-size:12.5px;color:#374151">CIS Kubernetes Benchmark v1.9</div><span class="tag" style="font-size:10px">Reference</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:8px 12px"><div style="font-size:12.5px;color:#374151">Company security runbook (v3.2)</div><span class="tag" style="font-size:10px">Policy</span></div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:8px 12px"><div style="font-size:12.5px;color:#374151">CVE database (live sync)</div><span class="tag" style="font-size:10px">Live data</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="tab-activity" style="display:none">
+        <div class="section-label" style="margin-bottom:8px">Recent actions</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:9px 12px"><div style="width:7px;height:7px;border-radius:50%;background:#51cf66;flex-shrink:0"></div><div style="flex:1"><div style="font-size:12.5px;color:#374151">Applied patch to <strong>nginx-deployment</strong> in prod-us-east-1/default</div><div style="font-size:11px;color:#8b8fa8">2 min ago · CVE-2024-3094</div></div><span class="tag tag-perm" style="font-size:10px">Remediated</span></div>
+          <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:9px 12px"><div style="width:7px;height:7px;border-radius:50%;background:#51cf66;flex-shrink:0"></div><div style="flex:1"><div style="font-size:12.5px;color:#374151">Created Jira ticket <strong>SEC-4821</strong> for privilege escalation risk</div><div style="font-size:11px;color:#8b8fa8">18 min ago · High severity</div></div><span class="tag" style="font-size:10px">Ticketed</span></div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff8e1;border:1px solid #ffe66d;border-radius:6px;padding:9px 12px"><div style="width:7px;height:7px;border-radius:50%;background:#fcc419;flex-shrink:0"></div><div style="flex:1"><div style="font-size:12.5px;color:#374151">Blocked: Attempted RBAC modification — outside permission scope</div><div style="font-size:11px;color:#8b8fa8">1 hr ago · Policy enforcement</div></div><span class="tag" style="font-size:10px;background:#fff3cd;color:#856404">Blocked</span></div>
+          <div style="display:flex;align-items:center;gap:10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:9px 12px"><div style="width:7px;height:7px;border-radius:50%;background:#51cf66;flex-shrink:0"></div><div style="flex:1"><div style="font-size:12.5px;color:#374151">Sent Slack alert to #security-alerts for critical CVE detection</div><div style="font-size:11px;color:#8b8fa8">2 hr ago</div></div><span class="tag" style="font-size:10px">Notified</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AGENT CARDS GRID -->
+    <div class="agents-grid">
+      <div class="agent-card selected" onclick="selectAgent(this)">
+        <div class="agent-header"><div style="display:flex;align-items:center;gap:8px"><div class="agent-avatar av-purple">R</div><div><div class="agent-name">Risk Remediation Agent</div><div class="agent-role">Autonomous Remediator</div></div></div><div class="status-dot dot-green"></div></div>
+        <div class="agent-desc">Monitors security risks and auto-applies safe patches. Integrates with Jira and Slack for end-to-end workflow automation.</div>
+        <div class="agent-tags"><span class="tag tag-perm">read</span><span class="tag tag-perm">patch:workloads</span><span class="tag tag-perm">jira:write</span></div>
+        <div class="agent-footer"><div class="agent-meta">142 actions today</div><div class="agent-actions"><button class="btn-icon" title="Edit">&#9998;</button><button class="btn-icon" title="Pause">&#10074;&#10074;</button><button class="btn-icon" title="More">&hellip;</button></div></div>
+      </div>
+
+      <div class="agent-card" onclick="selectAgent(this)">
+        <div class="agent-header"><div style="display:flex;align-items:center;gap:8px"><div class="agent-avatar av-blue">V</div><div><div class="agent-name">Vuln Triage Agent</div><div class="agent-role">Vulnerability Analyst</div></div></div><div class="status-dot dot-green"></div></div>
+        <div class="agent-desc">Continuously triages new CVEs against running images, assesses exploitability, and prioritizes by blast radius.</div>
+        <div class="agent-tags"><span class="tag tag-perm">read:vulnerabilities</span><span class="tag tag-perm">read:inventory</span></div>
+        <div class="agent-footer"><div class="agent-meta">89 actions today</div><div class="agent-actions"><button class="btn-icon">&#9998;</button><button class="btn-icon">&#10074;&#10074;</button><button class="btn-icon">&hellip;</button></div></div>
+      </div>
+
+      <div class="agent-card" onclick="selectAgent(this)">
+        <div class="agent-header"><div style="display:flex;align-items:center;gap:8px"><div class="agent-avatar av-teal">C</div><div><div class="agent-name">Compliance Monitor</div><div class="agent-role">Policy Enforcer</div></div></div><div class="status-dot dot-green"></div></div>
+        <div class="agent-desc">Continuously audits cluster posture against CIS benchmarks and SOC2/ISO27001 controls. Flags drift in real time.</div>
+        <div class="agent-tags"><span class="tag tag-perm">read:compliance</span><span class="tag tag-perm">read:rbac</span><span class="tag tag-perm">notify</span></div>
+        <div class="agent-footer"><div class="agent-meta">211 actions today</div><div class="agent-actions"><button class="btn-icon">&#9998;</button><button class="btn-icon">&#10074;&#10074;</button><button class="btn-icon">&hellip;</button></div></div>
+      </div>
+
+      <div class="agent-card" onclick="selectAgent(this)" style="border-color:#fca5a5">
+        <div class="agent-header"><div style="display:flex;align-items:center;gap:8px"><div class="agent-avatar av-red">IR</div><div><div class="agent-name">Incident Response Agent</div><div class="agent-role" style="color:#c92a2a">Autonomous Incident Responder</div></div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><div class="status-dot dot-green"></div><span style="font-size:9.5px;color:#c92a2a;font-weight:600;white-space:nowrap">3 active</span></div></div>
+        <div class="agent-desc">Detects, triages, and contains runtime security incidents. Executes IR runbooks autonomously and escalates destructive actions for human approval.</div>
+        <div class="agent-tags"><span class="tag" style="background:#fee2e2;color:#991b1b">read:runtime</span><span class="tag" style="background:#fee2e2;color:#991b1b">isolate:pods</span><span class="tag" style="background:#fee2e2;color:#991b1b">pagerduty</span></div>
+        <div class="agent-footer"><div class="agent-meta" style="color:#c92a2a;font-weight:500">&#9679; Live &middot; 84 actions today</div><div class="agent-actions"><button class="btn-icon" style="border-color:#fca5a5;color:#c92a2a" onclick="event.stopPropagation();window.location='armo_incident_response_agent.html'">&#8599;</button><button class="btn-icon">&#9998;</button><button class="btn-icon">&hellip;</button></div></div>
+      </div>
+
+      <div class="agent-card" onclick="selectAgent(this)">
+        <div class="agent-header"><div style="display:flex;align-items:center;gap:8px"><div class="agent-avatar av-gray">I</div><div><div class="agent-name">Identity Auditor</div><div class="agent-role">RBAC Inspector</div></div></div><div class="status-dot dot-green"></div></div>
+        <div class="agent-desc">Audits service account bindings, over-privileged roles, and unused identities across all clusters and namespaces.</div>
+        <div class="agent-tags"><span class="tag tag-perm">read:rbac</span><span class="tag tag-perm">read:identities</span></div>
+        <div class="agent-footer"><div class="agent-meta">54 actions today</div><div class="agent-actions"><button class="btn-icon">&#9998;</button><button class="btn-icon">&#10074;&#10074;</button><button class="btn-icon">&hellip;</button></div></div>
+      </div>
+
+      <div class="new-agent-card" onclick="toggleCreateModal()">
+        <div class="new-icon">+</div>
+        <div class="new-label">Create new agent</div>
+        <div class="new-sub">Define role, permissions &amp; context</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE MODAL -->
+<div id="createModal" class="modal-overlay">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:600;color:#1a1d2e">Create new AI agent</div>
+      <button onclick="toggleCreateModal()" style="background:none;border:none;font-size:20px;color:#6b7280;cursor:pointer">&times;</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:5px">Agent name</label>
+        <input type="text" placeholder="e.g. Runtime Incident Responder" style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px;font-size:13px;outline:none">
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:5px">Role template</label>
+        <select style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px;font-size:13px;outline:none;background:#fff">
+          <option>Autonomous Remediator</option>
+          <option>Read-only Analyst</option>
+          <option>Policy Enforcer</option>
+          <option>Threat Modeler</option>
+          <option>Custom role…</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:5px">Cluster scope</label>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#374151"><input type="checkbox" checked> prod-us-east-1</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#374151"><input type="checkbox"> staging-eu</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:#374151"><input type="checkbox"> dev-us-west</label>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:8px">Permission grants</label>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12.5px;color:#374151">Read security risks</span><button class="toggle on"></button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12.5px;color:#374151">Apply safe remediations</span><button class="toggle off"></button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12.5px;color:#374151">Create tickets (Jira)</span><button class="toggle off"></button></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12.5px;color:#374151">Send notifications (Slack)</span><button class="toggle on"></button></div>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:12px;font-weight:500;color:#374151;display:block;margin-bottom:5px">Agent context / instructions</label>
+        <textarea rows="3" placeholder="Define the agent's goals, constraints, and behavior guidelines..." style="width:100%;border:1px solid #d1d5db;border-radius:6px;padding:8px 12px;font-size:12.5px;outline:none;resize:vertical;font-family:monospace"></textarea>
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:4px">
+        <button onclick="toggleCreateModal()" class="btn-secondary">Cancel</button>
+        <button class="btn-primary">Create Agent</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function selectAgent(card){
+  document.querySelectorAll('.agent-card').forEach(c=>c.classList.remove('selected'));
+  card.classList.add('selected');
+  var panel=document.getElementById('detailPanel');
+  panel.classList.add('visible');
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closePanel(){
+  document.getElementById('detailPanel').classList.remove('visible');
+  document.querySelectorAll('.agent-card').forEach(c=>c.classList.remove('selected'));
+}
+function switchTab(el,tab){
+  document.querySelectorAll('.panel-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['overview','permissions','context','activity'].forEach(function(id){
+    var t=document.getElementById('tab-'+id);
+    if(t) t.style.display=id===tab?'block':'none';
+  });
+}
+function toggleCreateModal(){
+  var m=document.getElementById('createModal');
+  m.classList.toggle('open');
+}
+document.querySelectorAll('.toggle').forEach(function(btn){
+  btn.addEventListener('click',function(){
+    this.classList.toggle('on');
+    this.classList.toggle('off');
+  });
+});
+</script>
+
+</body>
+</html>
