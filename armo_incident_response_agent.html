@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARMO – Incident Response Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6f8;font-size:13px}
+.shell{display:flex;min-height:100vh}
+.sidebar{width:200px;background:#fff;border-right:1px solid #e8e9ec;padding:16px 0;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto}
+.logo-wrap{padding:0 16px 16px;border-bottom:1px solid #e8e9ec;margin-bottom:8px}
+.logo{font-size:18px;font-weight:700;color:#1a1d2e;letter-spacing:-0.5px}
+.logo-sub{font-size:9px;color:#8b8fa8;letter-spacing:1px;text-transform:uppercase}
+.nav-section{padding:12px 16px 4px;font-size:10px;font-weight:600;color:#8b8fa8;letter-spacing:0.8px;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 16px;color:#4a4e69;cursor:pointer;font-size:12.5px;border-left:2px solid transparent}
+.nav-item:hover{background:#f5f6f8}
+.nav-item.ai{color:#6741d9}
+.nav-item.ai.active{background:#f3f0ff;color:#6741d9;border-left:2px solid #6741d9;font-weight:500}
+.nav-item.plain.active{background:#eef2ff;color:#3b5bdb;border-left:2px solid #3b5bdb;font-weight:500}
+.ni{width:14px;height:14px;opacity:0.7;flex-shrink:0}
+.main{flex:1;margin-left:200px;overflow:auto}
+.topbar{background:#fff;border-bottom:1px solid #e8e9ec;height:50px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.bc{font-size:12px;color:#8b8fa8}
+.bc span{color:#1a1d2e;font-weight:500}
+.tr{display:flex;align-items:center;gap:8px}
+.pill{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+.pill-blue{background:#e8f4ff;color:#1971c2;border:1px solid #b8d8f5}
+.pill-green{background:#ebfbee;color:#2f9e44;border:1px solid #b2f2bb;display:flex;align-items:center;gap:4px}
+.avatar{width:28px;height:28px;border-radius:50%;background:#3b5bdb;color:#fff;font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center}
+.content{padding:24px}
+.page-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:20px;font-weight:600;color:#1a1d2e}
+.page-desc{font-size:12.5px;color:#6b7280;margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center}
+.btn-primary{background:#c92a2a;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-primary:hover{background:#b91c1c}
+.btn-ghost{background:#fff;color:#374151;border:1px solid #d1d5db;padding:7px 14px;border-radius:6px;font-size:12.5px;cursor:pointer}
+.btn-ghost:hover{background:#f9fafb}
+.agent-hero{background:#fff;border:1.5px solid #fca5a5;border-radius:10px;padding:16px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.agent-id{display:flex;align-items:center;gap:12px}
+.agent-av{width:44px;height:44px;border-radius:10px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#c92a2a;flex-shrink:0}
+.agent-name{font-size:15px;font-weight:600;color:#1a1d2e}
+.agent-role{font-size:12px;color:#c92a2a;font-weight:500;margin-top:1px}
+.status-live{display:flex;align-items:center;gap:6px;background:#fef2f2;border:1px solid #fca5a5;border-radius:20px;padding:4px 12px;font-size:12px;color:#c92a2a;font-weight:500}
+.pulse{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:pulse 1.5s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.agent-meta-row{display:flex;gap:20px}
+.meta-item{font-size:12px;color:#6b7280}
+.meta-item strong{color:#1a1d2e;font-weight:600}
+.agent-controls{display:flex;gap:8px}
+.btn-sm{padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer;font-weight:500;border:1px solid}
+.btn-pause{background:#fff;color:#6b7280;border-color:#d1d5db}
+.btn-escalate{background:#fff8dc;color:#92400e;border-color:#fcd34d}
+.stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px}
+.stat{background:#fff;border:1px solid #e8e9ec;border-radius:8px;padding:12px 14px}
+.stat-lbl{font-size:10.5px;color:#8b8fa8;font-weight:500;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:5px}
+.stat-val{font-size:20px;font-weight:600;color:#1a1d2e}
+.stat-sub{font-size:11px;margin-top:2px}
+.c-red{color:#c92a2a}.c-amber{color:#d97706}.c-green{color:#2f9e44}.c-blue{color:#1971c2}.c-purple{color:#6741d9}
+.two-col{display:grid;grid-template-columns:1fr 340px;gap:14px;margin-bottom:14px}
+.panel{background:#fff;border:1px solid #e8e9ec;border-radius:10px;overflow:hidden}
+.panel-hd{padding:12px 16px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:13px;font-weight:600;color:#1a1d2e;display:flex;align-items:center;gap:6px}
+.panel-body{padding:14px 16px}
+.incident-list{display:flex;flex-direction:column;gap:8px}
+.incident-row{border:1px solid #e8e9ec;border-radius:8px;padding:12px;cursor:pointer;transition:border-color 0.15s}
+.incident-row:hover{border-color:#c92a2a}
+.incident-row.active{border-color:#c92a2a;background:#fef9f9}
+.incident-row.resolved{border-left:3px solid #51cf66;border-radius:0 8px 8px 0}
+.inc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
+.inc-title{font-size:12.5px;font-weight:600;color:#1a1d2e}
+.sev-badge{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:600;white-space:nowrap;flex-shrink:0}
+.sev-critical{background:#fee2e2;color:#991b1b}
+.sev-high{background:#fef3c7;color:#92400e}
+.sev-medium{background:#ede9fe;color:#5b21b6}
+.sev-low{background:#d1fae5;color:#065f46}
+.inc-meta{font-size:11px;color:#8b8fa8;display:flex;gap:10px}
+.inc-progress{margin-top:8px}
+.progress-bar{height:3px;background:#f3f4f6;border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;border-radius:2px;background:#c92a2a;transition:width 0.4s}
+.progress-fill.done{background:#51cf66}
+.progress-lbl{font-size:10px;color:#8b8fa8;margin-top:3px;display:flex;justify-content:space-between}
+.runbook-panel{display:flex;flex-direction:column;gap:0}
+.rb-step{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid #f5f5f5}
+.rb-step:last-child{border-bottom:none}
+.rb-indicator{display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.rb-dot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.rb-dot.done{background:#d1fae5;color:#065f46}
+.rb-dot.active{background:#fee2e2;color:#991b1b}
+.rb-dot.pending{background:#f3f4f6;color:#9ca3af}
+.rb-line{width:1px;flex:1;min-height:12px;background:#e8e9ec;margin:2px auto}
+.rb-content{flex:1;padding-top:2px}
+.rb-name{font-size:12px;font-weight:500;color:#1a1d2e}
+.rb-detail{font-size:11px;color:#6b7280;margin-top:2px;line-height:1.5}
+.rb-time{font-size:10.5px;color:#9ca3af;margin-top:2px}
+.rb-action{display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-size:11px;color:#c92a2a;font-weight:500;cursor:pointer}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.feed-list{display:flex;flex-direction:column;gap:6px}
+.feed-item{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border-radius:6px;background:#f9fafb;border:1px solid #f0f0f0}
+.feed-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:4px}
+.fd-red{background:#ef4444}.fd-amber{background:#f59e0b}.fd-green{background:#22c55e}.fd-blue{background:#3b82f6}.fd-gray{background:#9ca3af}
+.feed-text{font-size:12px;color:#374151;line-height:1.5;flex:1}
+.feed-time{font-size:10.5px;color:#9ca3af;white-space:nowrap;margin-top:1px}
+.perm-list{display:flex;flex-direction:column;gap:6px}
+.perm-row{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px}
+.perm-label{font-size:12px;color:#374151;font-weight:500}
+.perm-scope{font-size:11px;color:#8b8fa8}
+.tog{width:32px;height:17px;border-radius:9px;border:none;cursor:pointer;position:relative;flex-shrink:0;transition:background 0.2s}
+.tog.on{background:#c92a2a}
+.tog.off{background:#d1d5db}
+.tog::after{content:'';position:absolute;width:13px;height:13px;background:#fff;border-radius:50%;top:2px;transition:left 0.15s}
+.tog.on::after{left:17px}
+.tog.off::after{left:2px}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:4px;font-weight:500}
+.tag-gray{background:#f3f4f6;color:#374151}
+.tag-red{background:#fee2e2;color:#991b1b}
+.escalation-box{background:#fff8dc;border:1px solid #fcd34d;border-radius:8px;padding:12px;display:flex;align-items:flex-start;gap:10px}
+.esc-icon{width:18px;height:18px;background:#f59e0b;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.esc-text{font-size:12px;color:#78350f;line-height:1.5}
+.context-box{background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px;padding:10px;font-size:11.5px;color:#374151;line-height:1.6;font-family:monospace}
+.int-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid #f5f5f5}
+.int-row:last-child{border-bottom:none}
+.int-name{font-size:12.5px;color:#374151;font-weight:500}
+.dot-g{width:6px;height:6px;border-radius:50%;background:#22c55e}
+.dot-a{width:6px;height:6px;border-radius:50%;background:#f59e0b}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="logo-wrap">
+    <div class="logo">ARMO</div>
+    <div class="logo-sub">Powered by Kubescape</div>
+  </div>
+  <div class="nav-section">Visibility</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><path d="M5 3v10M1 7h14"/></svg>Inventory</div>
+  <div class="nav-section">Posture</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5v4c0 3 2.5 5 6 5s6-2 6-5V5L8 2z"/></svg>Security Risks</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14l4-4m0 0l2-6 4 2-2 6m-4-2l-2 2"/></svg>Attack Path</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6"/><path d="M8 5v3l2 2"/></svg>Vulnerabilities</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M3 8h6M3 12h8"/></svg>Compliance</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="6" cy="6" r="3"/><path d="M11 11l-3-3M8 6h4M10 4v4"/></svg>Identities &amp; Roles</div>
+  <div class="nav-section">Prevention</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="5" width="12" height="8" rx="1"/><path d="M5 5V3.5a3 3 0 016 0V5"/></svg>Network Policies</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 11V6a5 5 0 0110 0v5"/><rect x="1" y="11" width="14" height="4" rx="1"/></svg>Seccomp Profiles</div>
+  <div class="nav-section" style="color:#6741d9;font-weight:600">AI Agents</div>
+  <div class="nav-item ai"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 2.2-5 5-5s5 2 5 5"/></svg>Agent Management</div>
+  <div class="nav-item ai"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12v8H2z"/><path d="M5 8h6M8 6v4"/></svg>Agent Policies</div>
+  <div class="nav-item ai"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12L5 4l3 5 2-3 4 6"/></svg>Activity Log</div>
+  <div class="nav-section">Threat Detection</div>
+  <div class="nav-item plain active"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 13l2-5 3 3 2-6 3 8"/></svg>Runtime Incidents</div>
+  <div class="nav-section">Code</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l-2 2 2 2M12 6l2 2-2 2M9 4l-2 8"/></svg>Repository Scanning</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="12" height="8" rx="1.5"/><circle cx="8" cy="8" r="2"/></svg>Registry Scanning</div>
+  <div class="nav-section">Policies</div>
+  <div class="nav-item plain"><svg class="ni" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2L2 5v4c0 3 2.5 5 6 5s6-2 6-5V5L8 2z"/><path d="M6 8l1.5 1.5L10 6.5"/></svg>Risk Acceptance</div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="bc">AI Agents &rsaquo; Agent Management &rsaquo; <span>Incident Response Agent</span></div>
+    <div class="tr">
+      <div style="font-size:12px;color:#8b8fa8">ARMO Platform</div>
+      <div class="pill pill-blue">Enterprise</div>
+      <div class="pill pill-green"><div style="width:7px;height:7px;border-radius:50%;background:#51cf66"></div>Healthy</div>
+      <div class="avatar">SL</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Incident Response Agent</div>
+        <div class="page-desc">Autonomous detection, triage, and containment of runtime security incidents across your clusters</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-ghost">Edit agent</button>
+        <button class="btn-ghost">View runbook</button>
+        <button class="btn-primary">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v3M8 11v.5"/></svg>
+          Trigger drill
+        </button>
+      </div>
+    </div>
+
+    <!-- AGENT HERO -->
+    <div class="agent-hero">
+      <div class="agent-id">
+        <div class="agent-av">IR</div>
+        <div>
+          <div class="agent-name">Incident Response Agent</div>
+          <div class="agent-role">Autonomous Incident Responder &middot; prod-us-east-1, staging-eu, dev-us-west</div>
+          <div class="agent-meta-row" style="margin-top:6px">
+            <div class="meta-item">MTTR: <strong>4.2 min</strong></div>
+            <div class="meta-item">Incidents handled: <strong>312</strong></div>
+            <div class="meta-item">Auto-contained: <strong>89%</strong></div>
+            <div class="meta-item">Human escalations: <strong>34</strong></div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:10px">
+        <div class="status-live"><div class="pulse"></div>Live &middot; Monitoring 3 clusters</div>
+        <div class="agent-controls">
+          <button class="btn-sm btn-pause">&#10074;&#10074; Pause</button>
+          <button class="btn-sm btn-escalate">&#9650; Escalate all</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat"><div class="stat-lbl">Active incidents</div><div class="stat-val c-red">3</div><div class="stat-sub c-red">2 critical, 1 high</div></div>
+      <div class="stat"><div class="stat-lbl">Contained (24h)</div><div class="stat-val">17</div><div class="stat-sub c-green">+3 vs yesterday</div></div>
+      <div class="stat"><div class="stat-lbl">MTTR</div><div class="stat-val">4.2m</div><div class="stat-sub c-green">&#9660; 38% vs baseline</div></div>
+      <div class="stat"><div class="stat-lbl">Actions taken</div><div class="stat-val">84</div><div class="stat-sub c-amber">6 awaiting approval</div></div>
+      <div class="stat"><div class="stat-lbl">Escalated</div><div class="stat-val">2</div><div class="stat-sub" style="color:#6b7280">Requires human review</div></div>
+    </div>
+
+    <!-- ESCALATION BANNER -->
+    <div class="escalation-box" style="margin-bottom:14px">
+      <div class="esc-icon"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2.5"><path d="M8 3v5M8 11v1"/></svg></div>
+      <div class="esc-text"><strong>Human approval needed:</strong> Agent proposes isolating <code>api-gateway-7d9f</code> pod in prod-us-east-1 due to suspected C2 beaconing. This action will cause brief service disruption. <span style="color:#c92a2a;font-weight:500;cursor:pointer">Approve &rarr;</span> &nbsp;<span style="color:#6b7280;cursor:pointer">Reject</span></div>
+    </div>
+
+    <!-- TWO COLUMN: INCIDENTS + RUNBOOK/INTEGRATIONS -->
+    <div class="two-col">
+      <div>
+        <div class="panel">
+          <div class="panel-hd">
+            <div class="panel-title">
+              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#c92a2a" stroke-width="1.8"><path d="M3 13l2-5 3 3 2-6 3 8"/></svg>
+              Active &amp; recent incidents
+            </div>
+            <div style="display:flex;gap:6px">
+              <span class="tag tag-red">3 active</span>
+              <span class="tag tag-gray">14 resolved</span>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="incident-list">
+              <div class="incident-row active" onclick="selectInc(this)">
+                <div class="inc-top"><div class="inc-title">Suspected C2 beaconing — api-gateway</div><span class="sev-badge sev-critical">Critical</span></div>
+                <div class="inc-meta"><span>prod-us-east-1 / default</span><span>Detected 8 min ago</span><span>INC-0041</span></div>
+                <div class="inc-progress"><div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div><div class="progress-lbl"><span>Containment in progress</span><span>65%</span></div></div>
+              </div>
+              <div class="incident-row" onclick="selectInc(this)">
+                <div class="inc-top"><div class="inc-title">Privilege escalation via RBAC misconfiguration</div><span class="sev-badge sev-critical">Critical</span></div>
+                <div class="inc-meta"><span>prod-us-east-1 / kube-system</span><span>22 min ago</span><span>INC-0040</span></div>
+                <div class="inc-progress"><div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div><div class="progress-lbl"><span>Analyzing blast radius</span><span>30%</span></div></div>
+              </div>
+              <div class="incident-row" onclick="selectInc(this)">
+                <div class="inc-top"><div class="inc-title">Anomalous outbound data transfer — data-processor</div><span class="sev-badge sev-high">High</span></div>
+                <div class="inc-meta"><span>staging-eu / payments</span><span>51 min ago</span><span>INC-0039</span></div>
+                <div class="inc-progress"><div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div><div class="progress-lbl"><span>Network policy applied</span><span>80%</span></div></div>
+              </div>
+              <div class="incident-row resolved" onclick="selectInc(this)">
+                <div class="inc-top"><div class="inc-title">Cryptominer detected in worker node</div><span class="sev-badge sev-high">High</span></div>
+                <div class="inc-meta"><span>dev-us-west / default</span><span>2h ago</span><span>INC-0038</span></div>
+                <div class="inc-progress"><div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div><div class="progress-lbl"><span>Resolved &middot; Pod terminated, image blocklisted</span><span>&#10003;</span></div></div>
+              </div>
+              <div class="incident-row resolved" onclick="selectInc(this)">
+                <div class="inc-top"><div class="inc-title">Sensitive env var exposed in container logs</div><span class="sev-badge sev-medium">Medium</span></div>
+                <div class="inc-meta"><span>staging-eu / backend</span><span>4h ago</span><span>INC-0037</span></div>
+                <div class="inc-progress"><div class="progress-bar"><div class="progress-fill done" style="width:100%"></div></div><div class="progress-lbl"><span>Resolved &middot; Secret rotated, log purged</span><span>&#10003;</span></div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="panel">
+          <div class="panel-hd">
+            <div class="panel-title">Active runbook — INC-0041</div>
+            <span class="tag tag-red" style="font-size:10px">Step 4 of 7</span>
+          </div>
+          <div class="panel-body" style="padding:10px 14px">
+            <div class="runbook-panel">
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot done">&#10003;</div><div class="rb-line"></div></div>
+                <div class="rb-content"><div class="rb-name">Detection &amp; alert</div><div class="rb-time">08:14:02 &middot; 12s</div></div>
+              </div>
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot done">&#10003;</div><div class="rb-line"></div></div>
+                <div class="rb-content"><div class="rb-name">Severity classification</div><div class="rb-detail">CVSS 9.1 &middot; Critical &middot; C2 pattern matched</div><div class="rb-time">08:14:14 &middot; 8s</div></div>
+              </div>
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot done">&#10003;</div><div class="rb-line"></div></div>
+                <div class="rb-content"><div class="rb-name">Blast radius mapping</div><div class="rb-detail">3 downstream services affected</div><div class="rb-time">08:14:22 &middot; 19s</div></div>
+              </div>
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot active">4</div><div class="rb-line"></div></div>
+                <div class="rb-content"><div class="rb-name" style="color:#c92a2a">Pod isolation (pending approval)</div><div class="rb-detail">Requires human sign-off &middot; Service disruption expected</div><div class="rb-action">&#9650; Awaiting your approval</div></div>
+              </div>
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot pending">5</div><div class="rb-line"></div></div>
+                <div class="rb-content"><div class="rb-name" style="color:#9ca3af">Network egress block</div></div>
+              </div>
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot pending">6</div><div class="rb-line"></div></div>
+                <div class="rb-content"><div class="rb-name" style="color:#9ca3af">Forensic snapshot</div></div>
+              </div>
+              <div class="rb-step">
+                <div class="rb-indicator"><div class="rb-dot pending">7</div></div>
+                <div class="rb-content"><div class="rb-name" style="color:#9ca3af">Slack + Jira report</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-hd"><div class="panel-title">Integrations</div></div>
+          <div class="panel-body" style="padding:8px 16px">
+            <div class="int-row"><div class="int-name">Slack #security-incidents</div><div style="display:flex;align-items:center;gap:4px;font-size:11px"><div class="dot-g"></div><span style="color:#2f9e44">Connected</span></div></div>
+            <div class="int-row"><div class="int-name">Jira SEC project</div><div style="display:flex;align-items:center;gap:4px;font-size:11px"><div class="dot-g"></div><span style="color:#2f9e44">Connected</span></div></div>
+            <div class="int-row"><div class="int-name">PagerDuty on-call</div><div style="display:flex;align-items:center;gap:4px;font-size:11px"><div class="dot-g"></div><span style="color:#2f9e44">Connected</span></div></div>
+            <div class="int-row"><div class="int-name">Vault (secret rotation)</div><div style="display:flex;align-items:center;gap:4px;font-size:11px"><div class="dot-a"></div><span style="color:#d97706">Degraded</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- THREE COLUMN: FEED + PERMISSIONS + CONTEXT -->
+    <div class="three-col">
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">Live action feed</div><span style="font-size:11px;color:#8b8fa8">Last 15 min</span></div>
+        <div class="panel-body" style="padding:10px 14px">
+          <div class="feed-list">
+            <div class="feed-item"><div class="feed-dot fd-red"></div><div class="feed-text">Detected C2 beacon pattern on <strong>api-gateway-7d9f</strong></div><div class="feed-time">8m</div></div>
+            <div class="feed-item"><div class="feed-dot fd-amber"></div><div class="feed-text">Escalated INC-0041 pod isolation to human reviewer</div><div class="feed-time">7m</div></div>
+            <div class="feed-item"><div class="feed-dot fd-blue"></div><div class="feed-text">Created Jira <strong>SEC-4902</strong> for INC-0041</div><div class="feed-time">7m</div></div>
+            <div class="feed-item"><div class="feed-dot fd-red"></div><div class="feed-text">Detected RBAC privilege escalation in kube-system</div><div class="feed-time">22m</div></div>
+            <div class="feed-item"><div class="feed-dot fd-amber"></div><div class="feed-text">Applied egress NetworkPolicy to <strong>data-processor</strong></div><div class="feed-time">45m</div></div>
+            <div class="feed-item"><div class="feed-dot fd-green"></div><div class="feed-text">Resolved INC-0038 &middot; cryptominer terminated</div><div class="feed-time">2h</div></div>
+            <div class="feed-item"><div class="feed-dot fd-gray"></div><div class="feed-text">Sent PagerDuty page to on-call engineer (INC-0041)</div><div class="feed-time">7m</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">Permissions</div></div>
+        <div class="panel-body" style="padding:10px 14px">
+          <div class="perm-list">
+            <div class="perm-row"><div><div class="perm-label">Read runtime events</div><div class="perm-scope">All clusters</div></div><button class="tog on"></button></div>
+            <div class="perm-row"><div><div class="perm-label">Isolate pods</div><div class="perm-scope">Requires approval</div></div><button class="tog on"></button></div>
+            <div class="perm-row"><div><div class="perm-label">Apply network policies</div><div class="perm-scope">Staging + dev only</div></div><button class="tog on"></button></div>
+            <div class="perm-row"><div><div class="perm-label">Kill / restart pods</div><div class="perm-scope">Non-prod only</div></div><button class="tog on"></button></div>
+            <div class="perm-row"><div><div class="perm-label">Rotate secrets</div><div class="perm-scope">Vault-mediated</div></div><button class="tog on"></button></div>
+            <div class="perm-row"><div><div class="perm-label">Modify RBAC bindings</div><div class="perm-scope">Disabled</div></div><button class="tog off"></button></div>
+            <div class="perm-row"><div><div class="perm-label">Delete namespaces</div><div class="perm-scope">Disabled</div></div><button class="tog off"></button></div>
+            <div class="perm-row"><div><div class="perm-label">PagerDuty alert</div><div class="perm-scope">Critical only</div></div><button class="tog on"></button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-hd"><div class="panel-title">Agent context</div></div>
+        <div class="panel-body" style="padding:10px 14px;display:flex;flex-direction:column;gap:12px">
+          <div class="context-box">You are an incident response agent for ARMO. Monitor runtime events across prod-us-east-1, staging-eu, dev-us-west. On detection: classify severity, map blast radius, execute the IR runbook. For Critical incidents in prod: always escalate pod isolation to human approval before acting. For non-prod: you may kill or restart pods autonomously. Never modify RBAC. Always create a Jira ticket and Slack notification within 2 min of detection. Page PagerDuty for CVSS &gt; 8.5 only.</div>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:#8b8fa8;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Runbook sources</div>
+            <div style="display:flex;flex-direction:column;gap:5px">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12px;color:#374151">NIST IR Playbook v2.1</span><span class="tag tag-gray" style="font-size:10px">Policy</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12px;color:#374151">Runtime threat signatures (live)</span><span class="tag tag-red" style="font-size:10px">Live</span></div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f9fafb;border:1px solid #e8e9ec;border-radius:6px"><span style="font-size:12px;color:#374151">Internal IR runbook v4.0</span><span class="tag tag-gray" style="font-size:10px">Reference</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+document.querySelectorAll('.tog').forEach(function(b){
+  b.addEventListener('click',function(){
+    this.classList.toggle('on');
+    this.classList.toggle('off');
+  });
+});
+function selectInc(el){
+  document.querySelectorAll('.incident-row').forEach(function(r){r.classList.remove('active')});
+  el.classList.add('active');
+}
+</script>
+</body>
+</html>
