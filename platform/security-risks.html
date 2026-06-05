@@ -8,72 +8,93 @@
 <body data-page="security-risks" data-title="Security Risks">
 
   <div class="page-head">
-    <div><h1>Security Risks</h1><div class="sub">Prioritized, deduplicated risks across posture, vulnerabilities and attack paths</div></div>
-    <div class="page-actions"><button class="btn">Export</button></div>
+    <div><h1>Security Risks</h1></div>
+    <div class="page-actions"><button class="btn primary">↻ Scan all</button></div>
   </div>
 
-  <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Total risks</div><div class="kpi-num">28</div></div>
-    <div class="card kpi"><div class="kpi-label">Critical</div><div class="kpi-num" style="color:var(--sev-crit)">6</div></div>
-    <div class="card kpi"><div class="kpi-label">Affected resources</div><div class="kpi-num">213</div></div>
-    <div class="card kpi"><div class="kpi-label">Accepted</div><div class="kpi-num">9</div></div>
-  </div>
+  <div class="banner info" style="margin-bottom:22px">✦ Smart Remediation — fix the most impactful risks first. <a style="margin-left:6px">Enable smart remediation →</a></div>
 
   <div class="toolbar">
-    <div class="filter-pill on">Severity: Critical, High ✕</div>
+    <div class="filter-pill">Severity ▾</div>
     <div class="filter-pill">Category ▾</div>
     <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">Framework ▾</div>
+    <div class="filter-pill">Namespace ▾</div>
+    <div class="filter-pill">+ Add filter</div>
     <div class="grow"></div>
-    <span class="count-note" id="cnt"></span>
+    <button class="btn sm">☆ Save filters</button>
+  </div>
+
+  <div class="widgets-row">
+    <div class="card"><div class="widget-title">Security risk severities</div><div id="wSev"></div></div>
+    <div class="card"><div class="widget-title">Categories</div><div id="wCat"></div></div>
+    <div class="card"><div class="widget-title">Trends (30d)</div><div id="wTrend"></div></div>
   </div>
 
   <div id="riskTable"></div>
+  <div class="paginator" id="pager"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
+  // ---- widgets ----
+  const sc={}; SEV.forEach(s=>sc[s]=0); SECURITY_RISKS.forEach(r=>sc[r.sev]++);
+  document.getElementById("wSev").innerHTML =
+    sevbar(sc) + '<div style="margin-top:10px">' +
+    SEV.filter(s=>sc[s]).map(s=>`<div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:${SEV_COLOR[s]}"></span>${s}<span class="n">${sc[s]}</span></div>`).join("") + '</div>';
+
+  const cats={}; SECURITY_RISKS.forEach(r=>cats[r.category]=(cats[r.category]||0)+1);
+  document.getElementById("wCat").innerHTML = hbars(Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([nm,v])=>({nm,v})), "#053CA1");
+
+  document.getElementById("wTrend").innerHTML =
+    `<svg class="spark" viewBox="0 0 160 56" preserveAspectRatio="none" style="height:56px">
+      <polyline fill="none" stroke="#e11900" stroke-width="2.2" points="0,38 20,33 40,36 60,26 80,29 100,21 120,24 140,15 160,19"/>
+      <polyline fill="none" stroke="#049d54" stroke-width="2.2" points="0,48 20,46 40,45 60,43 80,41 100,40 120,38 140,37 160,35"/>
+    </svg>
+    <div class="legend" style="flex-direction:row;gap:18px;margin-top:8px"><div class="it"><i style="background:#e11900"></i>New</div><div class="it"><i style="background:#049d54"></i>Resolved</div></div>`;
+
+  // ---- table ----
+  const dlt=(n,dir)=> n>0 ? `<span class="dlt ${dir}">${dir==="up"?"▲ +":"▼ -"}${n}</span>` : `<span class="dlt zero">0</span>`;
   const rows = SECURITY_RISKS.map(r=>`
-    <tr data-cluster="${r.cluster}" onclick='openRisk(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
-      <td>${sev(r.sev)}</td>
-      <td class="strong">${r.name}<div class="cellsub">${r.id} · ${r.cluster}</div></td>
+    <tr data-cluster="${r.cluster}" class="clickable-row" onclick='openRisk(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+      <td class="col-sev"><span class="sevstrip" style="background:${SEV_COLOR[r.sev]}"></span></td>
+      <td class="strong" style="font-size:14px">${r.name}${r.smart?'<span class="smart">✦ Smart fix</span>':''}</td>
       <td>${r.category}</td>
-      <td class="num strong">${r.score}</td>
-      <td class="num">${r.resources}</td>
-      <td>${r.frameworks.map(f=>`<span class="tag">${f}</span>`).join(" ")}</td>
-      <td class="muted">›</td>
+      <td class="muted" style="white-space:nowrap">${r.lastUpdated}</td>
+      <td>${dlt(r.newC,"up")}</td>
+      <td>${dlt(r.resolvedC,"down")}</td>
+      <td class="muted" style="white-space:nowrap">Cluster: ${r.clusters} | Namespace: ${r.namespaces} | Resource: ${r.resources}</td>
+      <td>${r.tickets?'<span class="tkt">🎫</span>':''}</td>
+      <td class="col-end"><span class="chevbtn">›</span></td>
     </tr>`).join("");
   document.getElementById("riskTable").innerHTML = table(
-    [{t:"Severity"},{t:"Risk"},{t:"Category"},{t:"Risk score",cls:"num"},{t:"Resources",cls:"num"},{t:"Frameworks"},{t:""}], rows);
-  document.getElementById("cnt").textContent = SECURITY_RISKS.length + " risks";
+    [{t:"",cls:"col-sev"},{t:"Risk name"},{t:"Category"},{t:"Last updated"},{t:"New"},{t:"Resolved"},{t:"Affected assets"},{t:""},{t:"",cls:"col-end"}], rows);
+
+  document.getElementById("pager").innerHTML =
+    `<span>Risks 1–${SECURITY_RISKS.length} of ${SECURITY_RISKS.length}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 
   function openRisk(r){
     openDrawer(`
       <div class="drawer-head">
-        <div>${sev(r.sev)}<h2>${r.name}</h2><div class="muted" style="margin-top:6px">${r.id} · ${r.category}</div></div>
+        <div><span class="sevstrip" style="background:${SEV_COLOR[r.sev]}"></span> <span class="sev ${r.sev}" style="margin-left:6px">${r.sev}</span>
+          <h2 style="margin-top:8px">${r.name}</h2>
+          <div class="muted" style="margin-top:6px">${r.category} · updated ${r.lastUpdated}</div></div>
         <div class="x" onclick="closeDrawer()">✕</div>
       </div>
       <div class="drawer-body">
         <div class="grid cols-3">
-          <div class="card kpi"><div class="kpi-label">Risk score</div><div class="kpi-num" style="font-size:24px">${r.score}</div></div>
-          <div class="card kpi"><div class="kpi-label">Resources</div><div class="kpi-num" style="font-size:24px">${r.resources}</div></div>
-          <div class="card kpi"><div class="kpi-label">Cluster</div><div class="kpi-num" style="font-size:16px;margin-top:10px">${r.cluster}</div></div>
+          <div class="card kpi"><div class="kpi-label">Clusters</div><div class="kpi-num" style="font-size:22px">${r.clusters}</div></div>
+          <div class="card kpi"><div class="kpi-label">Namespaces</div><div class="kpi-num" style="font-size:22px">${r.namespaces}</div></div>
+          <div class="card kpi"><div class="kpi-label">Resources</div><div class="kpi-num" style="font-size:22px">${r.resources}</div></div>
         </div>
         <div class="section-label">Description</div>
-        <p>This risk groups all resources where <b>${r.name.toLowerCase()}</b>. Attackers can leverage this misconfiguration to escalate privileges or move laterally within the cluster. ARMO correlates configuration, runtime and reachability signals to prioritize it.</p>
-        <div class="section-label">Frameworks</div>
-        <div>${r.frameworks.map(f=>`<span class="tag" style="margin-right:6px">${f}</span>`).join("")}</div>
+        <p>ARMO groups every resource affected by <b>${r.name.toLowerCase()}</b> into this risk and prioritizes it using configuration, reachability and runtime signals.</p>
+        ${r.smart?'<div class="banner info" style="margin:0 0 6px">✦ Smart Remediation available — one fix resolves multiple affected resources.</div>':''}
         <div class="section-label">Affected resources (${r.resources})</div>
         <div class="tbl-wrap"><table class="tbl"><tbody>
           <tr onclick='openWorkload("payments-api")'><td class="elink">payments-api</td><td class="muted">Deployment · payments</td><td>${sev(r.sev)}</td></tr>
           <tr onclick='openWorkload("auth-service")'><td class="elink">auth-service</td><td class="muted">Deployment · auth</td><td>${sev(r.sev)}</td></tr>
           <tr onclick='openWorkload("edge-proxy")'><td class="elink">edge-proxy</td><td class="muted">DaemonSet · prod</td><td>${sev(r.sev)}</td></tr>
         </tbody></table></div>
-        <div class="section-label">Remediation</div>
-        <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap">securityContext:
-  runAsNonRoot: true
-  allowPrivilegeEscalation: false
-  readOnlyRootFilesystem: true</div>
         <div style="display:flex;gap:8px;margin-top:18px">
           <button class="btn primary" onclick="toast('Ticket created for ${r.id}')">Create ticket</button>
           <button class="btn" onclick="go('risk-acceptance.html')">Accept risk</button>

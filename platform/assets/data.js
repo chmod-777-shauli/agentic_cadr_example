@@ -29,15 +29,17 @@ function hbars(items, color="#2f6df6"){ const max=Math.max(...items.map(i=>i.v))
 function rnd(seed){ let x=Math.sin(seed)*10000; return x-Math.floor(x); }
 
 /* ---------- Security risks (prioritized) ---------- */
+// fields mirror the real security-risks list: severity, name, category, lastUpdated,
+// new (resourcesDetectedLastChange), resolved, affected cluster/namespace/resource counts, tickets
 const SECURITY_RISKS = [
-  {id:"R-1", name:"Workload running as root with hostPath mount", category:"Configuration", sev:"Critical", score:96, resources:42, frameworks:["NSA","MITRE"], cluster:"prod-eu-1"},
-  {id:"R-2", name:"Internet-exposed workload with critical CVE", category:"Attack path", sev:"Critical", score:94, resources:7, frameworks:["NSA"], cluster:"prod-us-1"},
-  {id:"R-3", name:"Privileged container without seccomp profile", category:"Configuration", sev:"High", score:81, resources:23, frameworks:["CIS"], cluster:"prod-eu-1"},
-  {id:"R-4", name:"Cluster-admin bound to default service account", category:"RBAC", sev:"High", score:78, resources:5, frameworks:["NSA","MITRE"], cluster:"prod-us-1"},
-  {id:"R-5", name:"Image with known-exploited vulnerability (KEV)", category:"Vulnerability", sev:"High", score:74, resources:14, frameworks:["CISA"], cluster:"staging-eu-1"},
-  {id:"R-6", name:"Secrets mounted as environment variables", category:"Configuration", sev:"Medium", score:58, resources:31, frameworks:["CIS"], cluster:"prod-eu-1"},
-  {id:"R-7", name:"Workload without resource limits", category:"Configuration", sev:"Medium", score:44, resources:88, frameworks:["CIS"], cluster:"dev-1"},
-  {id:"R-8", name:"Anonymous access enabled on Kubelet", category:"Configuration", sev:"Low", score:29, resources:3, frameworks:["CIS"], cluster:"staging-eu-1"},
+  {id:"R-1", name:"Workload running as root with hostPath mount", category:"Configuration scanning", sev:"Critical", lastUpdated:"Jun 4, 2026", newC:4, resolvedC:1, clusters:2, namespaces:6, resources:42, tickets:0, smart:false, cluster:"prod-eu-1"},
+  {id:"R-2", name:"Internet-exposed workload with a critical vulnerability", category:"Attack path", sev:"Critical", lastUpdated:"Jun 5, 2026", newC:1, resolvedC:0, clusters:1, namespaces:2, resources:7, tickets:1, smart:true, cluster:"prod-us-1"},
+  {id:"R-3", name:"Privileged container without seccomp profile", category:"Configuration scanning", sev:"High", lastUpdated:"Jun 3, 2026", newC:0, resolvedC:3, clusters:1, namespaces:4, resources:23, tickets:0, smart:false, cluster:"prod-eu-1"},
+  {id:"R-4", name:"Cluster-admin bound to a default service account", category:"RBAC", sev:"High", lastUpdated:"Jun 5, 2026", newC:2, resolvedC:0, clusters:1, namespaces:1, resources:5, tickets:0, smart:false, cluster:"prod-us-1"},
+  {id:"R-5", name:"Image with a known-exploited vulnerability (KEV)", category:"Vulnerabilities", sev:"High", lastUpdated:"Jun 4, 2026", newC:5, resolvedC:2, clusters:1, namespaces:3, resources:14, tickets:1, smart:true, cluster:"staging-eu-1"},
+  {id:"R-6", name:"Secrets mounted as environment variables", category:"Configuration scanning", sev:"Medium", lastUpdated:"Jun 1, 2026", newC:0, resolvedC:0, clusters:2, namespaces:5, resources:31, tickets:0, smart:false, cluster:"prod-eu-1"},
+  {id:"R-7", name:"Workload without CPU/memory limits", category:"Configuration scanning", sev:"Medium", lastUpdated:"Jun 2, 2026", newC:8, resolvedC:0, clusters:3, namespaces:9, resources:88, tickets:0, smart:false, cluster:"dev-1"},
+  {id:"R-8", name:"Anonymous access enabled on Kubelet", category:"Configuration scanning", sev:"Low", lastUpdated:"May 29, 2026", newC:0, resolvedC:0, clusters:1, namespaces:1, resources:3, tickets:0, smart:false, cluster:"staging-eu-1"},
 ];
 
 /* ---------- Vulnerabilities ---------- */
