@@ -17,7 +17,7 @@
   const data=[["payments-api","payments","prod-eu-1","Required",14,8],["auth-service","auth","prod-us-1","Applied",9,5],["edge-proxy","prod","prod-us-1","Required",22,11],["web-frontend","prod","prod-us-1","Missing runtime info",0,0],["postgres","data","prod-eu-1","Applied",4,3]];
   const stColor={"Applied":"#049d54","Required":"#fb9000","Missing runtime info":"#A2A2A7"};
   document.getElementById("t").innerHTML = table([{t:"Workload"},{t:"Namespace"},{t:"Cluster"},{t:"Status"},{t:"Ingress rules",cls:"num"},{t:"Egress rules",cls:"num"}],
-    data.map(d=>`<tr onclick='openPolicy(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td><span class="status-dot" style="background:${stColor[d[3]]}"></span>${d[3]}</td><td class="num">${d[4]}</td><td class="num">${d[5]}</td></tr>`).join(""));
+    data.map(d=>`<tr data-cluster="${d[2]}" onclick='openPolicy(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td><span class="status-dot" style="background:${stColor[d[3]]}"></span>${d[3]}</td><td class="num">${d[4]}</td><td class="num">${d[5]}</td></tr>`).join(""));
 
   function openPolicy(d){
     const yaml = `apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: ${d[0]}-generated\n  namespace: ${d[1]}\nspec:\n  podSelector:\n    matchLabels:\n      app: ${d[0]}\n  policyTypes: [Ingress, Egress]\n  ingress:\n    - from:\n        - podSelector: { matchLabels: { app: api-gateway } }\n      ports: [ { protocol: TCP, port: 8080 } ]\n  egress:\n    - to:\n        - podSelector: { matchLabels: { app: postgres } }\n      ports: [ { protocol: TCP, port: 5432 } ]`;

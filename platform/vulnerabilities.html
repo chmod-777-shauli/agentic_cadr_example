@@ -66,7 +66,7 @@
     },
     workloads(){
       const rows = VULN_WORKLOADS.map(w=>`
-        <tr onclick='openWorkload("${w.name}")'><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
+        <tr data-cluster="${w.cluster}" onclick='openWorkload("${w.name}")'><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
         <td style="width:200px">${sevbar({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}</div></td>
         <td>${w.inUse?'<span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span>':'<span class="muted">Not in use</span>'}</td></tr>`).join("");
       return table([{t:"Workload"},{t:"Vulnerabilities"},{t:"Runtime"}], rows);
@@ -80,7 +80,7 @@
       return table([{t:"Host"},{t:"Cluster"},{t:"OS"},{t:"Critical",cls:"num"},{t:"High",cls:"num"}], hosts.map(h=>`<tr><td class="strong mono">${h[0]}</td><td class="muted">${h[1]}</td><td>${h[2]}</td><td class="num" style="color:var(--sev-crit);font-weight:700">${h[3]}</td><td class="num" style="color:var(--sev-high);font-weight:700">${h[4]}</td></tr>`).join(""));
     }
   };
-  function show(v){ document.getElementById("vbody").innerHTML = views[v](); document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.v===v)); document.getElementById("cnt").textContent = document.querySelectorAll("#vbody tbody tr").length + " results"; }
+  function show(v){ document.getElementById("vbody").innerHTML = views[v](); document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.v===v)); document.getElementById("cnt").textContent = document.querySelectorAll("#vbody tbody tr").length + " results"; if(window.applyClusterFilter) window.applyClusterFilter(); }
   document.querySelectorAll("#tabs .tab").forEach(t=>t.onclick=()=>show(t.dataset.v));
   show("cves");
 

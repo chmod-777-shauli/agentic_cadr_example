@@ -74,8 +74,14 @@ const NAV = [
         <header class="topbar">
           <div class="crumbs">ARMO <span>›</span> <b>${title}</b></div>
           <div class="spacer"></div>
-          <div class="tb-pill">All clusters ▾</div>
-          <div class="tb-search">🔍<input placeholder="Search resources, CVEs, controls…"></div>
+          <div class="tb-dd">
+            <div class="tb-pill" id="clusterPill" onclick="toggleDD('clusterMenu',event)"><span id="clusterLabel">All clusters</span> ▾</div>
+            <div class="dd-menu" id="clusterMenu"></div>
+          </div>
+          <div class="tb-dd search-wrap">
+            <div class="tb-search">🔍<input id="globalSearch" placeholder="Search resources, CVEs, controls…" autocomplete="off" oninput="onSearch(this.value)" onfocus="onSearch(this.value)" onkeydown="searchKey(event)"></div>
+            <div class="dd-menu" id="searchMenu"></div>
+          </div>
           <div class="tb-pill">Last 7 days ▾</div>
           <div class="tb-ava">S</div>
         </header>
@@ -145,4 +151,84 @@ function closeDrawer(){
   document.getElementById("drawer").classList.remove("open");
   document.getElementById("scrim").classList.remove("show");
 }
-document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); });
+document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeDrawer(); closeAllDD(); } });
+
+/* ---------------- top-bar interactivity: cluster filter + global search ---------- */
+function toggleDD(id, ev){ if(ev) ev.stopPropagation(); const m=document.getElementById(id); const open=m.classList.contains("open"); closeAllDD(); if(!open) m.classList.add("open"); }
+function closeAllDD(){ document.querySelectorAll(".dd-menu").forEach(m=>m.classList.remove("open")); }
+document.addEventListener("click", ()=>closeAllDD());
+
+/* CLUSTER FILTER — scopes every page that has cluster-tagged rows; persists across nav */
+const _CLUSTERS = (typeof CLUSTERS!=="undefined") ? CLUSTERS : ["prod-eu-1","prod-us-1","staging-eu-1","dev-1"];
+let ACTIVE_CLUSTER = sessionStorage.getItem("armo_cluster") || "all";
+(function initClusterMenu(){
+  const menu=document.getElementById("clusterMenu");
+  const opts=["all", ..._CLUSTERS];
+  menu.innerHTML = opts.map(c=>`<div class="dd-item ${c===ACTIVE_CLUSTER?'sel':''}" onclick="selectCluster('${c}')">${c==="all"?"All clusters":c}<span class="chk">✓</span></div>`).join("");
+  setClusterLabel();
+})();
+function setClusterLabel(){
+  document.getElementById("clusterLabel").textContent = ACTIVE_CLUSTER==="all" ? "All clusters" : ACTIVE_CLUSTER;
+  document.getElementById("clusterPill").classList.toggle("on", ACTIVE_CLUSTER!=="all");
+}
+function selectCluster(c){
+  ACTIVE_CLUSTER=c; sessionStorage.setItem("armo_cluster", c);
+  document.querySelectorAll("#clusterMenu .dd-item").forEach(it=>it.classList.toggle("sel", it.textContent.replace("✓","").trim()===(c==="all"?"All clusters":c)));
+  setClusterLabel(); closeAllDD(); applyClusterFilter();
+  if(c!=="all") toast("Scoped to "+c); else toast("Showing all clusters");
+}
+/* Hide rows whose data-cluster doesn't match. Rows without data-cluster are untouched.
+   Pages that re-render tables (e.g. tabs) can call window.applyClusterFilter() afterwards. */
+function applyClusterFilter(){
+  let shown=0, total=0;
+  document.querySelectorAll("#main tbody tr[data-cluster]").forEach(tr=>{
+    total++;
+    const match = ACTIVE_CLUSTER==="all" || tr.dataset.cluster===ACTIVE_CLUSTER;
+    tr.style.display = match ? "" : "none";
+    if(match) shown++;
+  });
+  document.querySelectorAll("[data-cluster-count]").forEach(el=>{ if(total) el.textContent = shown+" results"; });
+}
+window.applyClusterFilter = applyClusterFilter;
+
+/* GLOBAL SEARCH — unified index across datasets + pages; jumps to the entity */
+function _idx(){
+  const out=[];
+  const push=(t,s,kind,href)=>out.push({t,s,kind,href,q:(t+" "+s).toLowerCase()});
+  NAV.forEach(g=>g.items.forEach(it=>push(it.t,"Page","Page",it.href)));
+  push("Settings","Page","Page","settings.html");
+  if(typeof WORKLOADS!=="undefined") WORKLOADS.forEach(w=>push(w.name,`${w.kind} · ${w.ns} · ${w.cluster}`,"Workload",`inventory.html#workload=${encodeURIComponent(w.name)}`));
+  if(typeof CVES!=="undefined") CVES.forEach(c=>push(c.id,`${c.pkg} ${c.version} · ${c.sev}`,"CVE","vulnerabilities.html"));
+  if(typeof CONTROLS!=="undefined") CONTROLS.forEach(c=>push(c.name,`${c.id} · ${c.sev}`,"Control","compliance.html"));
+  if(typeof SECURITY_RISKS!=="undefined") SECURITY_RISKS.forEach(r=>push(r.name,`${r.category} · ${r.sev}`,"Risk","security-risks.html"));
+  if(typeof INCIDENTS!=="undefined") INCIDENTS.forEach(i=>push(i.name,`${CLASS_LABEL[i.classification]} · ${i.cluster}`,"Incident","runtime-incidents.html"));
+  return out;
+}
+let _results=[], _active=-1;
+function onSearch(v){
+  const menu=document.getElementById("searchMenu"); v=(v||"").trim().toLowerCase();
+  if(!v){ menu.classList.remove("open"); return; }
+  closeAllDD();
+  _results = _idx().filter(r=>r.q.includes(v)).slice(0,12); _active=-1;
+  if(!_results.length){ menu.innerHTML=`<div class="sr-empty">No matches for “${v}”.</div>`; menu.classList.add("open"); return; }
+  const groups={}; _results.forEach((r,i)=>{ (groups[r.kind]=groups[r.kind]||[]).push({...r,i}); });
+  menu.innerHTML = Object.entries(groups).map(([k,list])=>`<div class="sr-group">${k}${k==="Page"?"":"s"}</div>`+
+    list.map(r=>`<div class="sr-item" data-i="${r.i}" onclick="goResult(${r.i})"><div><div class="sr-t">${r.t}</div><div class="sr-s">${r.s}</div></div><span class="sr-kind">${r.kind}</span></div>`).join("")).join("");
+  menu.classList.add("open");
+}
+function goResult(i){ const r=_results[i]; if(r) location.href=r.href; }
+function searchKey(e){
+  const items=[...document.querySelectorAll("#searchMenu .sr-item")];
+  if(e.key==="ArrowDown"){ e.preventDefault(); _active=Math.min(_active+1,items.length-1); }
+  else if(e.key==="ArrowUp"){ e.preventDefault(); _active=Math.max(_active-1,0); }
+  else if(e.key==="Enter"){ if(_active>=0&&items[_active]) goResult(+items[_active].dataset.i); else if(items[0]) goResult(+items[0].dataset.i); return; }
+  else return;
+  items.forEach((el,idx)=>el.classList.toggle("active", idx===_active));
+}
+
+/* deep-link: open a workload drawer from search (e.g. inventory.html#workload=payments-api) */
+window.addEventListener("load", ()=>{
+  applyClusterFilter();
+  const m=/#workload=([^&]+)/.exec(location.hash);
+  if(m && typeof openWorkload==="function") setTimeout(()=>openWorkload(decodeURIComponent(m[1])), 150);
+});

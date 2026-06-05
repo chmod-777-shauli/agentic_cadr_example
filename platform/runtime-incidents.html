@@ -40,7 +40,7 @@
   document.getElementById("trend").innerHTML = spark([5,7,6,9,8,11,9,12,10,8,11,9,13,11], "#e11900", 50);
 
   const rows = INCIDENTS.map(i=>`
-    <tr onclick='openInc(${JSON.stringify(i).replace(/'/g,"&#39;")})'>
+    <tr data-cluster="${i.cluster}" onclick='openInc(${JSON.stringify(i).replace(/'/g,"&#39;")})'>
       <td>${sev(i.sev)}</td>
       <td class="strong">${i.name}<div class="cellsub">${i.mitre}</div></td>
       <td>${clsf(i.classification)}</td>

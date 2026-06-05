@@ -34,7 +34,7 @@
 <script src="assets/shell.js"></script>
 <script>
   const rows = SECURITY_RISKS.map(r=>`
-    <tr onclick='openRisk(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+    <tr data-cluster="${r.cluster}" onclick='openRisk(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
       <td>${sev(r.sev)}</td>
       <td class="strong">${r.name}<div class="cellsub">${r.id} · ${r.cluster}</div></td>
       <td>${r.category}</td>
