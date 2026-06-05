@@ -70,7 +70,7 @@
         </tbody></table></div>
         <div class="section-label">Remediation</div>
         <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap">Set the appropriate securityContext / policy on the workload spec and re-deploy.</div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary">Create ticket</button><button class="btn">Add exception</button></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Ticket created for '+c.id)">Create ticket</button><button class="btn" onclick="go('risk-acceptance.html')">Add exception</button></div>
       </div>`);
   }
 </script>

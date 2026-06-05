@@ -66,7 +66,7 @@
     },
     workloads(){
       const rows = VULN_WORKLOADS.map(w=>`
-        <tr><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
+        <tr onclick='openWorkload("${w.name}")'><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
         <td style="width:200px">${sevbar({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}</div></td>
         <td>${w.inUse?'<span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span>':'<span class="muted">Not in use</span>'}</td></tr>`).join("");
       return table([{t:"Workload"},{t:"Vulnerabilities"},{t:"Runtime"}], rows);
@@ -96,10 +96,10 @@
         <div class="kv"><div class="k">Package</div><div class="v">${c.pkg}</div><div class="k">Installed</div><div class="v mono">${c.version}</div><div class="k">Fixed in</div><div class="v mono pass">${c.fix}</div><div class="k">Known-exploited</div><div class="v">${c.kev?'Yes (CISA KEV)':'No'}</div></div>
         <div class="section-label">Affected (${c.workloads} workloads · ${c.images} images)</div>
         <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr><td class="strong">payments-api</td><td class="muted">payments · prod-eu-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
-          <tr><td class="strong">edge-proxy</td><td class="muted">prod · prod-us-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
+          <tr onclick='openWorkload("payments-api")'><td class="elink">payments-api</td><td class="muted">payments · prod-eu-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
+          <tr onclick='openWorkload("edge-proxy")'><td class="elink">edge-proxy</td><td class="muted">prod · prod-us-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
         </tbody></table></div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary">Create ticket</button><button class="btn">Accept risk</button></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Ticket created for '+c.id)">Create ticket</button><button class="btn" onclick="go('risk-acceptance.html')">Accept risk</button></div>
       </div>`);
   }
 </script>

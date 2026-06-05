@@ -60,14 +60,14 @@
         <div class="section-label">Attack story</div>
         <p>The workload <b>${i.workload}</b> exhibited behavior matching <b>${i.name.toLowerCase()}</b> (MITRE: ${i.mitre}). ARMO correlated the process tree, network egress and the workload's learned profile to raise this incident.</p>
         <div class="section-label">Affected resource</div>
-        <div class="kv"><div class="k">Cluster</div><div class="v">${i.cluster}</div><div class="k">Namespace</div><div class="v">${i.ns}</div><div class="k">Workload</div><div class="v">${i.workload}</div><div class="k">MITRE tactic</div><div class="v">${i.mitre}</div></div>
+        <div class="kv"><div class="k">Cluster</div><div class="v">${i.cluster}</div><div class="k">Namespace</div><div class="v">${i.ns}</div><div class="k">Workload</div><div class="v"><span class="elink" onclick='openWorkload("${i.workload}")'>${i.workload}</span></div><div class="k">MITRE tactic</div><div class="v">${i.mitre}</div></div>
         <div class="section-label">Events</div>
         <div class="tbl-wrap"><table class="tbl"><tbody>
           <tr><td class="mono">14:32:01</td><td>Process exec: /bin/sh -i</td></tr>
           <tr><td class="mono">14:32:01</td><td>Outbound TCP → 185.220.101.42:4444</td></tr>
           <tr><td class="mono">14:32:04</td><td>Read /etc/passwd</td></tr>
         </tbody></table></div>
-        <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn primary">Change status</button><button class="btn">Reclassify</button><button class="btn">Respond</button><button class="btn">Create ticket</button></div>
+        <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn primary" onclick="toast('Status updated')">Change status</button><button class="btn" onclick="toast('Incident reclassified')">Reclassify</button><button class="btn" onclick="toast('Response applied')">Respond</button><button class="btn" onclick="toast('Ticket created')">Create ticket</button></div>
       </div>`);
   }
 </script>

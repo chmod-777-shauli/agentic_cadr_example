@@ -65,9 +65,9 @@
         <div>${r.frameworks.map(f=>`<span class="tag" style="margin-right:6px">${f}</span>`).join("")}</div>
         <div class="section-label">Affected resources (${r.resources})</div>
         <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr><td class="strong">payments-api</td><td class="muted">Deployment · payments</td><td>${sev(r.sev)}</td></tr>
-          <tr><td class="strong">auth-service</td><td class="muted">Deployment · auth</td><td>${sev(r.sev)}</td></tr>
-          <tr><td class="strong">edge-proxy</td><td class="muted">DaemonSet · prod</td><td>${sev(r.sev)}</td></tr>
+          <tr onclick='openWorkload("payments-api")'><td class="elink">payments-api</td><td class="muted">Deployment · payments</td><td>${sev(r.sev)}</td></tr>
+          <tr onclick='openWorkload("auth-service")'><td class="elink">auth-service</td><td class="muted">Deployment · auth</td><td>${sev(r.sev)}</td></tr>
+          <tr onclick='openWorkload("edge-proxy")'><td class="elink">edge-proxy</td><td class="muted">DaemonSet · prod</td><td>${sev(r.sev)}</td></tr>
         </tbody></table></div>
         <div class="section-label">Remediation</div>
         <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap">securityContext:
@@ -75,9 +75,9 @@
   allowPrivilegeEscalation: false
   readOnlyRootFilesystem: true</div>
         <div style="display:flex;gap:8px;margin-top:18px">
-          <button class="btn primary">Create ticket</button>
-          <button class="btn">Accept risk</button>
-          <button class="btn">View attack path</button>
+          <button class="btn primary" onclick="toast('Ticket created for ${r.id}')">Create ticket</button>
+          <button class="btn" onclick="go('risk-acceptance.html')">Accept risk</button>
+          <button class="btn" onclick="go('attack-path.html')">View attack path</button>
         </div>
       </div>`);
   }

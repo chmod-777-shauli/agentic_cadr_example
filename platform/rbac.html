@@ -15,5 +15,21 @@
 <script>
   const data=[["default","ServiceAccount","payments","Critical","cluster-admin","Can do anything cluster-wide"],["ci-deployer","ServiceAccount","ci","High","edit (all ns)","Can read all secrets"],["dev-team","Group","—","High","custom: secrets-reader","Reads secrets in 12 ns"],["grafana","ServiceAccount","monitoring","Medium","view","Excessive list/watch"],["jenkins","ServiceAccount","ci","High","create pods/exec","Can exec into pods"]];
   document.getElementById("t").innerHTML = table([{t:"Subject"},{t:"Kind"},{t:"Namespace"},{t:"Risk"},{t:"Effective role"},{t:"Why it's risky"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td>${sev(d[3])}</td><td class="mono">${d[4]}</td><td class="muted">${d[5]}</td></tr>`).join(""));
+    data.map(d=>`<tr onclick='openSubject(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td>${sev(d[3])}</td><td class="mono">${d[4]}</td><td class="muted">${d[5]}</td></tr>`).join(""));
+
+  function openSubject(d){
+    openDrawer(`<div class="drawer-head"><div>${sev(d[3])}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[2]||'cluster-wide'}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="banner info" style="margin-bottom:14px">${d[5]}</div>
+        <div class="section-label">Effective permissions</div>
+        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Resource</th><th>Verbs</th><th>Used?</th></tr></thead><tbody>
+          <tr><td class="mono">secrets</td><td class="mono">get, list, watch</td><td class="fail">unused 30d</td></tr>
+          <tr><td class="mono">pods/exec</td><td class="mono">create</td><td class="pass">used</td></tr>
+          <tr><td class="mono">deployments</td><td class="mono">*</td><td class="fail">unused 30d</td></tr>
+        </tbody></table></div>
+        <div class="section-label">Bound via</div>
+        <div class="kv"><div class="k">RoleBinding</div><div class="v mono">${d[0]}-binding</div><div class="k">Role</div><div class="v mono">${d[4]}</div></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Least-privilege role suggested')">Suggest least-privilege</button><button class="btn" onclick="toast('Exported')">Export</button></div>
+      </div>`);
+  }
 </script></body></html>

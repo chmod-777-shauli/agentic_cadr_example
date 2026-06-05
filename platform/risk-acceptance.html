@@ -23,5 +23,21 @@
   ];
   const stc={"Active":"#049d54","Expired":"#A2A2A7"};
   document.getElementById("t").innerHTML = table([{t:"Rule"},{t:"Type"},{t:"Resources",cls:"num"},{t:"Reason"},{t:"Created by"},{t:"Expires"},{t:"Status"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td><span class="tag">${d[1]}</span></td><td class="num">${d[2]}</td><td class="muted">${d[3]}</td><td class="muted">${d[4]}</td><td class="muted">${d[5]}</td><td><span class="status-dot" style="background:${stc[d[6]]}"></span>${d[6]}</td></tr>`).join(""));
+    data.map(d=>`<tr onclick='openExc(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td><span class="tag">${d[1]}</span></td><td class="num">${d[2]}</td><td class="muted">${d[3]}</td><td class="muted">${d[4]}</td><td class="muted">${d[5]}</td><td><span class="status-dot" style="background:${stc[d[6]]}"></span>${d[6]}</td></tr>`).join(""));
+
+  function openExc(d){
+    openDrawer(`<div class="drawer-head"><div><span class="status-dot" style="background:${stc[d[6]]}"></span>${d[6]}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[2]} resources suppressed</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="section-label">Exception details</div>
+        <div class="kv"><div class="k">Reason</div><div class="v">${d[3]}</div><div class="k">Created by</div><div class="v">${d[4]}</div><div class="k">Expires</div><div class="v">${d[5]}</div><div class="k">Status</div><div class="v">${d[6]}</div></div>
+        <div class="section-label">Scope</div>
+        <div class="kv"><div class="k">Clusters</div><div class="v">prod-eu-1, prod-us-1</div><div class="k">Namespaces</div><div class="v">payments, auth</div><div class="k">Kind</div><div class="v">Deployment</div></div>
+        <div class="section-label">Suppressed resources (${d[2]})</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr onclick='openWorkload("payments-api")'><td class="elink">payments-api</td><td class="muted">payments · prod-eu-1</td></tr>
+          <tr onclick='openWorkload("auth-service")'><td class="elink">auth-service</td><td class="muted">auth · prod-us-1</td></tr>
+        </tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Exception extended 90 days')">Extend</button><button class="btn" onclick="toast('Exception revoked')">Revoke</button></div>
+      </div>`);
+  }
 </script></body></html>

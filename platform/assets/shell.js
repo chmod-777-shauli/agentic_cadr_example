@@ -83,9 +83,57 @@ const NAV = [
       </div>
     </div>
     <div id="scrim" onclick="closeDrawer()"></div>
-    <aside class="drawer" id="drawer"><div id="drawerContent"></div></aside>`;
+    <aside class="drawer" id="drawer"><div id="drawerContent"></div></aside>
+    <div id="toast"></div>`;
   document.getElementById("main").appendChild(content);
 })();
+
+/* toast */
+let _toastT=null;
+function toast(msg){ const t=document.getElementById("toast"); t.innerHTML=`<span class="ok">✓</span>${msg}`; t.classList.add("show"); clearTimeout(_toastT); _toastT=setTimeout(()=>t.classList.remove("show"),2400); }
+function go(href){ location.href = href; }
+
+/* Shared 360° workload drawer — reachable from Inventory, Vulnerabilities,
+   Security Risks, etc. The connective tissue that makes it feel like one product. */
+function openWorkload(name){
+  const w = (typeof WORKLOADS!=="undefined" && WORKLOADS.find(x=>x.name===name))
+    || {name, kind:"Deployment", ns:"prod", cluster:"prod-eu-1", replicas:3, risk:"High", cves:16, runtime:true};
+  const cvb = {Critical:Math.round(w.cves*0.12),High:Math.round(w.cves*0.28),Medium:Math.round(w.cves*0.4),Low:Math.round(w.cves*0.2)};
+  const inc = (typeof INCIDENTS!=="undefined") ? INCIDENTS.find(i=>i.workload===name) : null;
+  openDrawer(`
+    <div class="drawer-head">
+      <div><span class="sev ${w.risk}">${w.risk} risk</span><h2>${w.name}</h2>
+        <div class="muted" style="margin-top:6px">${w.kind} · ${w.ns} · ${w.cluster} · ${w.replicas} replicas</div></div>
+      <div class="x" onclick="closeDrawer()">✕</div>
+    </div>
+    <div class="drawer-body">
+      <div class="grid cols-3">
+        <div class="card kpi"><div class="kpi-label">Risk</div><div class="kpi-num" style="font-size:18px;margin-top:10px">${w.risk}</div></div>
+        <div class="card kpi"><div class="kpi-label">CVEs</div><div class="kpi-num" style="font-size:24px">${w.cves}</div></div>
+        <div class="card kpi"><div class="kpi-label">Runtime</div><div class="kpi-num" style="font-size:14px;margin-top:12px">${w.runtime?'<span class="pass">Monitored</span>':'<span class="muted">No sensor</span>'}</div></div>
+      </div>
+
+      <div class="section-label">Vulnerabilities</div>
+      ${sevbar(cvb)}<div class="cellsub" style="margin-top:6px">${sevCounts(cvb)}</div>
+      <div class="xref" onclick="go('vulnerabilities.html')"><div><div class="xref-t">View all CVEs</div><div class="xref-s">Image &amp; package breakdown</div></div><span class="arrow">›</span></div>
+
+      <div class="section-label">Posture &amp; compliance</div>
+      <div class="xref" onclick="go('compliance.html')"><div><div class="xref-t">4 failed controls</div><div class="xref-s">Non-root, resource limits, privilege escalation…</div></div><span class="arrow">›</span></div>
+      <div class="xref" onclick="go('security-risks.html')"><div><div class="xref-t">Part of 3 security risks</div><div class="xref-s">incl. 1 Critical</div></div><span class="arrow">›</span></div>
+
+      <div class="section-label">Attack path</div>
+      <div class="xref" onclick="go('attack-path.html')"><div><div class="xref-t">Reachable from the internet</div><div class="xref-s">Internet → ${w.name} → secrets</div></div><span class="arrow">›</span></div>
+
+      <div class="section-label">Runtime activity</div>
+      ${inc ? `<div class="xref" onclick="go('runtime-incidents.html')"><div><div class="xref-t">${inc.name}</div><div class="xref-s">${CLASS_LABEL[inc.classification]} · ${inc.time}</div></div><span class="arrow">›</span></div>`
+            : `<div class="muted" style="font-size:13px">No open runtime incidents.</div>`}
+
+      <div style="display:flex;gap:8px;margin-top:20px">
+        <button class="btn primary" onclick="toast('Ticket created for ${w.name}')">Create ticket</button>
+        <button class="btn" onclick="toast('Risk accepted for ${w.name}')">Accept risk</button>
+      </div>
+    </div>`);
+}
 
 /* shared drawer (detail side panel) */
 function openDrawer(html){

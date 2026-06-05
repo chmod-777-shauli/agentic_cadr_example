@@ -17,5 +17,18 @@
   const data=[["payments-api","payments","prod-eu-1","Required",14,8],["auth-service","auth","prod-us-1","Applied",9,5],["edge-proxy","prod","prod-us-1","Required",22,11],["web-frontend","prod","prod-us-1","Missing runtime info",0,0],["postgres","data","prod-eu-1","Applied",4,3]];
   const stColor={"Applied":"#049d54","Required":"#fb9000","Missing runtime info":"#A2A2A7"};
   document.getElementById("t").innerHTML = table([{t:"Workload"},{t:"Namespace"},{t:"Cluster"},{t:"Status"},{t:"Ingress rules",cls:"num"},{t:"Egress rules",cls:"num"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td><span class="status-dot" style="background:${stColor[d[3]]}"></span>${d[3]}</td><td class="num">${d[4]}</td><td class="num">${d[5]}</td></tr>`).join(""));
+    data.map(d=>`<tr onclick='openPolicy(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td><span class="status-dot" style="background:${stColor[d[3]]}"></span>${d[3]}</td><td class="num">${d[4]}</td><td class="num">${d[5]}</td></tr>`).join(""));
+
+  function openPolicy(d){
+    const yaml = `apiVersion: networking.k8s.io/v1\nkind: NetworkPolicy\nmetadata:\n  name: ${d[0]}-generated\n  namespace: ${d[1]}\nspec:\n  podSelector:\n    matchLabels:\n      app: ${d[0]}\n  policyTypes: [Ingress, Egress]\n  ingress:\n    - from:\n        - podSelector: { matchLabels: { app: api-gateway } }\n      ports: [ { protocol: TCP, port: 8080 } ]\n  egress:\n    - to:\n        - podSelector: { matchLabels: { app: postgres } }\n      ports: [ { protocol: TCP, port: 5432 } ]`;
+    openDrawer(`<div class="drawer-head"><div><span class="status-dot" style="background:${stColor[d[3]]}"></span>${d[3]}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[2]} · ${d[4]} ingress / ${d[5]} egress rules</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="banner info" style="margin-bottom:14px">Generated from <b style="margin:0 4px">14 days</b> of observed traffic.</div>
+        <div class="section-label">Generated policy</div>
+        <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:11.5px;white-space:pre-wrap;line-height:1.5">${yaml}</div>
+        <div class="section-label">Affected workload</div>
+        <div class="xref" onclick='openWorkload("${d[0]}")'><div><div class="xref-t">${d[0]}</div><div class="xref-s">${d[1]} · ${d[2]}</div></div><span class="arrow">›</span></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Network policy applied to ${d[0]}')">Apply policy</button><button class="btn" onclick="toast('YAML copied')">Copy YAML</button></div>
+      </div>`);
+  }
 </script></body></html>
