@@ -16,5 +16,20 @@
 <script>
   const data=[["armosec/payments-api","GitHub","main",{Critical:1,High:6,Medium:9},"2h ago"],["armosec/infra-terraform","GitHub","main",{Critical:2,High:12,Medium:21},"4h ago"],["armosec/helm-charts","GitHub","main",{Critical:0,High:4,Medium:7},"1d ago"],["armosec/auth-service","GitLab","develop",{Critical:0,High:3,Medium:5},"6h ago"]];
   document.getElementById("t").innerHTML = table([{t:"Repository"},{t:"Provider"},{t:"Branch"},{t:"Findings"},{t:"Last scan"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="mono muted">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td class="muted">${d[4]}</td></tr>`).join(""));
+    data.map(d=>`<tr onclick='openRepo(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="mono muted">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td class="muted">${d[4]}</td></tr>`).join(""));
+
+  function openRepo(d){
+    openDrawer(`<div class="drawer-head"><div><span class="tag">${d[1]}</span><h2>${d[0]}</h2><div class="muted mono" style="margin-top:6px">${d[2]} · scanned ${d[4]}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="section-label">Findings</div>${sevbar(d[3])}<div class="cellsub" style="margin-top:6px">${sevCounts(d[3])}</div>
+        <div class="section-label">Top findings</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td>${sev("Critical")}</td><td>Hardcoded AWS secret</td><td class="mono muted">deploy/main.tf:42</td></tr>
+          <tr><td>${sev("High")}</td><td>Container runs as root</td><td class="mono muted">k8s/deployment.yaml:18</td></tr>
+          <tr><td>${sev("High")}</td><td>S3 bucket public ACL</td><td class="mono muted">terraform/s3.tf:7</td></tr>
+          <tr><td>${sev("Medium")}</td><td>Missing resource limits</td><td class="mono muted">k8s/deployment.yaml:31</td></tr>
+        </tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Pull request opened with fixes')">Open fix PR</button><button class="btn" onclick="toast('Re-scan queued')">Re-scan</button></div>
+      </div>`);
+  }
 </script></body></html>

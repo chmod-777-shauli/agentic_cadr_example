@@ -78,6 +78,10 @@ const NAV = [
             <div class="tb-pill" id="clusterPill" onclick="toggleDD('clusterMenu',event)"><span id="clusterLabel">All clusters</span> ▾</div>
             <div class="dd-menu" id="clusterMenu"></div>
           </div>
+          <div class="tb-dd">
+            <div class="tb-pill" id="nsPill" onclick="toggleDD('nsMenu',event)"><span id="nsLabel">All namespaces</span> ▾</div>
+            <div class="dd-menu" id="nsMenu"></div>
+          </div>
           <div class="tb-dd search-wrap">
             <div class="tb-search">🔍<input id="globalSearch" placeholder="Search resources, CVEs, controls…" autocomplete="off" oninput="onSearch(this.value)" onfocus="onSearch(this.value)" onkeydown="searchKey(event)"></div>
             <div class="dd-menu" id="searchMenu"></div>
@@ -158,38 +162,45 @@ function toggleDD(id, ev){ if(ev) ev.stopPropagation(); const m=document.getElem
 function closeAllDD(){ document.querySelectorAll(".dd-menu").forEach(m=>m.classList.remove("open")); }
 document.addEventListener("click", ()=>closeAllDD());
 
-/* CLUSTER FILTER — scopes every page that has cluster-tagged rows; persists across nav */
+/* CLUSTER + NAMESPACE FILTERS — scope every cluster/ns-tagged page; persist across nav.
+   Pages that recompute (dashboard) register window.onScopeChange(cluster, ns). */
 const _CLUSTERS = (typeof CLUSTERS!=="undefined") ? CLUSTERS : ["prod-eu-1","prod-us-1","staging-eu-1","dev-1"];
+const _NAMESPACES = (typeof NAMESPACES!=="undefined") ? NAMESPACES : ["prod","staging","kube-system","payments","auth","data","dev"];
 let ACTIVE_CLUSTER = sessionStorage.getItem("armo_cluster") || "all";
-(function initClusterMenu(){
-  const menu=document.getElementById("clusterMenu");
-  const opts=["all", ..._CLUSTERS];
-  menu.innerHTML = opts.map(c=>`<div class="dd-item ${c===ACTIVE_CLUSTER?'sel':''}" onclick="selectCluster('${c}')">${c==="all"?"All clusters":c}<span class="chk">✓</span></div>`).join("");
-  setClusterLabel();
-})();
-function setClusterLabel(){
+let ACTIVE_NS = sessionStorage.getItem("armo_ns") || "all";
+
+function _buildMenu(menuId, opts, active, allLabel, pick){
+  document.getElementById(menuId).innerHTML =
+    ["all", ...opts].map(o=>`<div class="dd-item ${o===active?'sel':''}" onclick="${pick}('${o}')">${o==="all"?allLabel:o}<span class="chk">✓</span></div>`).join("");
+}
+_buildMenu("clusterMenu", _CLUSTERS, ACTIVE_CLUSTER, "All clusters", "selectCluster");
+_buildMenu("nsMenu", _NAMESPACES, ACTIVE_NS, "All namespaces", "selectNs");
+function _setLabels(){
   document.getElementById("clusterLabel").textContent = ACTIVE_CLUSTER==="all" ? "All clusters" : ACTIVE_CLUSTER;
+  document.getElementById("nsLabel").textContent = ACTIVE_NS==="all" ? "All namespaces" : ACTIVE_NS;
   document.getElementById("clusterPill").classList.toggle("on", ACTIVE_CLUSTER!=="all");
+  document.getElementById("nsPill").classList.toggle("on", ACTIVE_NS!=="all");
 }
-function selectCluster(c){
-  ACTIVE_CLUSTER=c; sessionStorage.setItem("armo_cluster", c);
-  document.querySelectorAll("#clusterMenu .dd-item").forEach(it=>it.classList.toggle("sel", it.textContent.replace("✓","").trim()===(c==="all"?"All clusters":c)));
-  setClusterLabel(); closeAllDD(); applyClusterFilter();
-  if(c!=="all") toast("Scoped to "+c); else toast("Showing all clusters");
+_setLabels();
+function selectCluster(c){ ACTIVE_CLUSTER=c; sessionStorage.setItem("armo_cluster",c); _refreshScope(c==="all"?"Showing all clusters":"Scoped to "+c); }
+function selectNs(n){ ACTIVE_NS=n; sessionStorage.setItem("armo_ns",n); _refreshScope(n==="all"?"All namespaces":"Namespace: "+n); }
+function _refreshScope(msg){
+  _buildMenu("clusterMenu",_CLUSTERS,ACTIVE_CLUSTER,"All clusters","selectCluster");
+  _buildMenu("nsMenu",_NAMESPACES,ACTIVE_NS,"All namespaces","selectNs");
+  _setLabels(); closeAllDD(); applyScope(); toast(msg);
 }
-/* Hide rows whose data-cluster doesn't match. Rows without data-cluster are untouched.
-   Pages that re-render tables (e.g. tabs) can call window.applyClusterFilter() afterwards. */
-function applyClusterFilter(){
-  let shown=0, total=0;
-  document.querySelectorAll("#main tbody tr[data-cluster]").forEach(tr=>{
-    total++;
-    const match = ACTIVE_CLUSTER==="all" || tr.dataset.cluster===ACTIVE_CLUSTER;
-    tr.style.display = match ? "" : "none";
-    if(match) shown++;
+/* Hide rows that don't match the active cluster AND namespace. Rows missing a
+   data-cluster/data-namespace attribute aren't constrained by that dimension. */
+function applyScope(){
+  document.querySelectorAll("#main tbody tr").forEach(tr=>{
+    if(!tr.dataset.cluster && !tr.dataset.namespace) return;
+    const cOk = ACTIVE_CLUSTER==="all" || !tr.dataset.cluster || tr.dataset.cluster===ACTIVE_CLUSTER;
+    const nOk = ACTIVE_NS==="all" || !tr.dataset.namespace || tr.dataset.namespace===ACTIVE_NS;
+    tr.style.display = (cOk && nOk) ? "" : "none";
   });
-  document.querySelectorAll("[data-cluster-count]").forEach(el=>{ if(total) el.textContent = shown+" results"; });
+  if(typeof window.onScopeChange==="function") window.onScopeChange(ACTIVE_CLUSTER, ACTIVE_NS);
 }
-window.applyClusterFilter = applyClusterFilter;
+window.applyClusterFilter = applyScope;  // back-compat alias used by pages
 
 /* GLOBAL SEARCH — unified index across datasets + pages; jumps to the entity */
 function _idx(){
@@ -228,7 +239,7 @@ function searchKey(e){
 
 /* deep-link: open a workload drawer from search (e.g. inventory.html#workload=payments-api) */
 window.addEventListener("load", ()=>{
-  applyClusterFilter();
+  applyScope();
   const m=/#workload=([^&]+)/.exec(location.hash);
   if(m && typeof openWorkload==="function") setTimeout(()=>openWorkload(decodeURIComponent(m[1])), 150);
 });

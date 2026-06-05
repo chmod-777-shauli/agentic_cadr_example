@@ -66,7 +66,7 @@
     },
     workloads(){
       const rows = VULN_WORKLOADS.map(w=>`
-        <tr data-cluster="${w.cluster}" onclick='openWorkload("${w.name}")'><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
+        <tr data-cluster="${w.cluster}" data-namespace="${w.ns}" onclick='openWorkload("${w.name}")'><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
         <td style="width:200px">${sevbar({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}</div></td>
         <td>${w.inUse?'<span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span>':'<span class="muted">Not in use</span>'}</td></tr>`).join("");
       return table([{t:"Workload"},{t:"Vulnerabilities"},{t:"Runtime"}], rows);

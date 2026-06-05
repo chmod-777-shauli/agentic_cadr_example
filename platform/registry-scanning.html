@@ -16,5 +16,19 @@
 <script>
   const data=[["docker.io/armo","Docker Hub",312,{Critical:14,High:62,Medium:120},"connected"],["ghcr.io/armo","GitHub","189",{Critical:6,High:31,Medium:74},"connected"],["123.dkr.ecr.eu-central-1","Amazon ECR",604,{Critical:18,High:88,Medium:201},"connected"],["harbor.internal","Harbor",179,{Critical:3,High:19,Medium:44},"connected"]];
   document.getElementById("t").innerHTML = table([{t:"Registry"},{t:"Type"},{t:"Images",cls:"num"},{t:"Vulnerabilities"},{t:"Status"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong mono">${d[0]}</td><td class="muted">${d[1]}</td><td class="num">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>Connected</span></td></tr>`).join(""));
+    data.map(d=>`<tr onclick='openReg(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong mono">${d[0]}</td><td class="muted">${d[1]}</td><td class="num">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>Connected</span></td></tr>`).join(""));
+
+  function openReg(d){
+    openDrawer(`<div class="drawer-head"><div><span class="tag">${d[1]}</span><h2 class="mono">${d[0]}</h2><div class="muted" style="margin-top:6px">${d[2]} images scanned</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="section-label">Vulnerabilities</div>${sevbar(d[3])}<div class="cellsub" style="margin-top:6px">${sevCounts(d[3])}</div>
+        <div class="section-label">Most vulnerable images</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr onclick="go('vulnerabilities.html')"><td class="elink mono">payments-api:1.8.2</td><td>${sev("Critical")}</td><td class="num">31</td></tr>
+          <tr onclick="go('vulnerabilities.html')"><td class="elink mono">nginx:1.25.1</td><td>${sev("High")}</td><td class="num">26</td></tr>
+          <tr onclick="go('vulnerabilities.html')"><td class="elink mono">auth-service:4.4</td><td>${sev("High")}</td><td class="num">16</td></tr>
+        </tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Re-scan queued for ${d[0]}')">Re-scan registry</button><button class="btn" onclick="toast('Settings opened')">Configure</button></div>
+      </div>`);
+  }
 </script></body></html>

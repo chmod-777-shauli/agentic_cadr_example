@@ -8,15 +8,15 @@
 <body data-page="dashboard" data-title="Dashboard">
 
   <div class="page-head">
-    <div><h1>Security posture overview</h1><div class="sub">Across 4 clusters · 312 workloads · last scan 18 minutes ago</div></div>
+    <div><h1>Security posture overview</h1><div class="sub" id="scopeSub">Across 4 clusters · 312 workloads · last scan 18 minutes ago</div></div>
     <div class="page-actions"><button class="btn">Export</button><button class="btn primary">Run scan</button></div>
   </div>
 
   <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Security risks</div><div class="kpi-num" style="color:var(--sev-crit)">28</div><div class="kpi-delta up">▲ 4 this week</div><div class="kpi-spark" id="k1"></div></div>
-    <div class="card kpi"><div class="kpi-label">Open runtime incidents</div><div class="kpi-num" style="color:var(--sev-high)">11</div><div class="kpi-delta up">▲ 3 today</div><div class="kpi-spark" id="k2"></div></div>
-    <div class="card kpi"><div class="kpi-label">Critical & High CVEs</div><div class="kpi-num">147</div><div class="kpi-delta down">▼ 12 this week</div><div class="kpi-spark" id="k3"></div></div>
-    <div class="card kpi"><div class="kpi-label">Compliance score</div><div class="kpi-num" style="color:var(--sev-med)">72%</div><div class="kpi-delta down">▲ 3% this week</div><div class="kpi-spark" id="k4"></div></div>
+    <div class="card kpi"><div class="kpi-label">Security risks</div><div class="kpi-num" id="kSr" style="color:var(--sev-crit)">28</div><div class="kpi-delta up">▲ 4 this week</div><div class="kpi-spark" id="k1"></div></div>
+    <div class="card kpi"><div class="kpi-label">Open runtime incidents</div><div class="kpi-num" id="kInc" style="color:var(--sev-high)">11</div><div class="kpi-delta up">▲ 3 today</div><div class="kpi-spark" id="k2"></div></div>
+    <div class="card kpi"><div class="kpi-label">Critical & High CVEs</div><div class="kpi-num" id="kCve">147</div><div class="kpi-delta down">▼ 12 this week</div><div class="kpi-spark" id="k3"></div></div>
+    <div class="card kpi"><div class="kpi-label">Compliance score</div><div class="kpi-num" id="kComp" style="color:var(--sev-med)">72%</div><div class="kpi-delta down">▲ 3% this week</div><div class="kpi-spark" id="k4"></div></div>
   </div>
 
   <div class="grid cols-3" style="margin-bottom:16px">
@@ -49,21 +49,11 @@
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
+  // static sparklines (decorative)
   document.getElementById("k1").innerHTML = spark([18,20,19,22,21,24,28], "#6b0047");
   document.getElementById("k2").innerHTML = spark([6,5,8,7,9,8,11], "#e11900");
   document.getElementById("k3").innerHTML = spark([180,176,170,165,159,152,147], "#049d54");
   document.getElementById("k4").innerHTML = spark([66,67,69,68,70,71,72], "#fb9000");
-
-  const riskSeg = [
-    {label:"Critical", value:6, color:SEV_COLOR.Critical},
-    {label:"High", value:9, color:SEV_COLOR.High},
-    {label:"Medium", value:8, color:SEV_COLOR.Medium},
-    {label:"Low", value:5, color:SEV_COLOR.Low},
-  ];
-  document.getElementById("riskDonut").innerHTML = donut(riskSeg);
-  document.getElementById("riskLegend").innerHTML = legend(riskSeg);
-
-  // trend: two overlaid sparklines
   document.getElementById("trend").innerHTML =
     `<svg class="spark" viewBox="0 0 160 60" preserveAspectRatio="none" style="height:60px">
       <polyline fill="none" stroke="#e11900" stroke-width="2.2" points="0,40 20,34 40,38 60,28 80,30 100,22 120,26 140,16 160,20"/>
@@ -72,32 +62,53 @@
     <div class="legend" style="flex-direction:row;gap:18px;margin-top:8px">
       <div class="it"><i style="background:#e11900"></i>New</div><div class="it"><i style="background:#049d54"></i>Resolved</div></div>`;
 
-  document.getElementById("coverage").innerHTML = hbars([
-    {nm:"prod-eu-1", v:98, color:"#049d54"},
-    {nm:"prod-us-1", v:96, color:"#049d54"},
-    {nm:"staging-eu-1", v:82, color:"#fb9000"},
-    {nm:"dev-1", v:61, color:"#e11900"},
-  ]);
+  const COMPLIANCE_BY_CLUSTER = { "prod-eu-1":68, "prod-us-1":74, "staging-eu-1":80, "dev-1":59 };
+  const COVERAGE = [{nm:"prod-eu-1",v:98},{nm:"prod-us-1",v:96},{nm:"staging-eu-1",v:82},{nm:"dev-1",v:61}];
 
-  document.getElementById("topRisks").innerHTML = hbars(
-    SECURITY_RISKS.slice(0,6).map(r=>({nm:r.name, v:r.score, color:SEV_COLOR[r.sev]}))
-  );
-  document.getElementById("topControls").innerHTML = hbars(
-    CONTROLS.filter(c=>c.status==="fail").slice(0,6).map(c=>({nm:c.name, v:c.failed, color:SEV_COLOR[c.sev]}))
-  );
+  // recompute every widget for the active cluster/namespace scope
+  function renderDash(cluster, ns){
+    cluster = cluster||"all"; ns = ns||"all";
+    const inC = x => cluster==="all" || x===cluster;
+    const inN = x => ns==="all" || x===ns;
+    const risks = SECURITY_RISKS.filter(r=>inC(r.cluster));
+    const incidents = INCIDENTS.filter(i=>inC(i.cluster)&&inN(i.ns));
+    const vw = VULN_WORKLOADS.filter(w=>inC(w.cluster)&&inN(w.ns));
 
-  const rows = INCIDENTS.slice(0,6).map(i=>`
-    <tr onclick="location.href='runtime-incidents.html'">
-      <td>${sev(i.sev)}</td>
-      <td class="strong">${i.name}</td>
-      <td>${clsf(i.classification)}</td>
-      <td class="muted">${i.cluster} / ${i.ns}</td>
-      <td><span class="tag">${i.status}</span></td>
-      <td class="muted">${i.time}</td>
-    </tr>`).join("");
-  document.getElementById("recentIncidents").innerHTML = table(
-    [{t:"Severity"},{t:"Threat"},{t:"Classification"},{t:"Resource"},{t:"Status"},{t:"First seen"}], rows
-  ).replace('tbl-wrap"','tbl-wrap" style="border:0;border-radius:0;box-shadow:none"');
+    document.getElementById("scopeSub").textContent =
+      `Scope: ${cluster==="all"?"all clusters":cluster} · ${ns==="all"?"all namespaces":ns} · last scan 18 minutes ago`;
+
+    document.getElementById("kSr").textContent = risks.length;
+    document.getElementById("kInc").textContent = incidents.length;
+    document.getElementById("kCve").textContent = vw.reduce((a,w)=>a+w.c+w.h,0) || (cluster==="all"?147:0);
+    document.getElementById("kComp").textContent = (cluster==="all" ? 72 : (COMPLIANCE_BY_CLUSTER[cluster]??72)) + "%";
+
+    const sc = {}; SEV.forEach(s=>sc[s]=0); risks.forEach(r=>sc[r.sev]++);
+    const seg = SEV.filter(s=>sc[s]).map(s=>({label:s,value:sc[s],color:SEV_COLOR[s]}));
+    document.getElementById("riskDonut").innerHTML = seg.length?donut(seg):`<div class="donut" style="background:#eef1f6"><div class="hole"><div class="n">0</div><div class="l">total</div></div></div>`;
+    document.getElementById("riskLegend").innerHTML = seg.length?legend(seg):'<div class="muted">No risks in scope</div>';
+
+    document.getElementById("coverage").innerHTML = hbars(
+      COVERAGE.filter(c=>inC(c.nm)).map(c=>({nm:c.nm, v:c.v, color:c.v>=95?"#049d54":c.v>=75?"#fb9000":"#e11900"})));
+
+    document.getElementById("topRisks").innerHTML = risks.length
+      ? hbars(risks.slice(0,6).map(r=>({nm:r.name, v:r.score, color:SEV_COLOR[r.sev]})))
+      : '<div class="empty-state" style="padding:20px"><div class="muted">No security risks in scope</div></div>';
+    document.getElementById("topControls").innerHTML = hbars(
+      CONTROLS.filter(c=>c.status==="fail").slice(0,6).map(c=>({nm:c.name, v:c.failed, color:SEV_COLOR[c.sev]})));
+
+    const rows = incidents.slice(0,6).map(i=>`
+      <tr onclick="location.href='runtime-incidents.html'">
+        <td>${sev(i.sev)}</td><td class="strong">${i.name}</td><td>${clsf(i.classification)}</td>
+        <td class="muted">${i.cluster} / ${i.ns}</td><td><span class="tag">${i.status}</span></td><td class="muted">${i.time}</td>
+      </tr>`).join("") || `<tr><td colspan="6" class="muted" style="padding:20px;text-align:center">No open incidents in scope</td></tr>`;
+    document.getElementById("recentIncidents").innerHTML = table(
+      [{t:"Severity"},{t:"Threat"},{t:"Classification"},{t:"Resource"},{t:"Status"},{t:"First seen"}], rows
+    ).replace('tbl-wrap"','tbl-wrap" style="border:0;border-radius:0;box-shadow:none"');
+  }
+  window.onScopeChange = renderDash;                       // react to top-bar filters
+  renderDash(                                              // initial render at current (possibly persisted) scope
+    typeof ACTIVE_CLUSTER!=="undefined"?ACTIVE_CLUSTER:"all",
+    typeof ACTIVE_NS!=="undefined"?ACTIVE_NS:"all");
 </script>
 </body>
 </html>

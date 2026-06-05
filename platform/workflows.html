@@ -16,5 +16,21 @@
 <script>
   const data=[["Critical CVE → Jira","New Critical vulnerability","Create Jira ticket","Jira",true,128],["Active threat → Slack","Incident classified Active threat","Notify #secops","Slack",true,54],["New attack path → Slack + Jira","New attack path","Notify + ticket","Slack, Jira",true,17],["Weekly posture digest","Schedule: Monday 9am","Email summary","Email",true,8],["Compliance drift → Teams","Framework score drops >5%","Notify channel","Teams",false,0]];
   document.getElementById("t").innerHTML = table([{t:"Workflow"},{t:"Trigger"},{t:"Action"},{t:"Channel"},{t:"Enabled"},{t:"Runs (7d)",cls:"num"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td>${d[2]}</td><td><span class="tag">${d[3]}</span></td><td>${d[4]?'<span class="pass">On</span>':'<span class="muted">Off</span>'}</td><td class="num">${d[5]}</td></tr>`).join(""));
+    data.map(d=>`<tr onclick='openWf(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td>${d[2]}</td><td><span class="tag">${d[3]}</span></td><td>${d[4]?'<span class="pass">On</span>':'<span class="muted">Off</span>'}</td><td class="num">${d[5]}</td></tr>`).join(""));
+
+  function openWf(d){
+    openDrawer(`<div class="drawer-head"><div>${d[4]?'<span class="pass">On</span>':'<span class="muted">Off</span>'}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[5]} runs in the last 7 days</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="section-label">Definition</div>
+        <div class="kv"><div class="k">Trigger</div><div class="v">${d[1]}</div><div class="k">Action</div><div class="v">${d[2]}</div><div class="k">Channel</div><div class="v">${d[3]}</div></div>
+        <div class="section-label">Recent runs</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td class="mono">10:42</td><td>Critical CVE in payments-api</td><td class="pass">Success</td></tr>
+          <tr><td class="mono">09:18</td><td>Active threat: reverse shell</td><td class="pass">Success</td></tr>
+          <tr><td class="mono">08:55</td><td>New attack path</td><td class="pass">Success</td></tr>
+          <tr><td class="mono">07:30</td><td>Critical CVE in edge-proxy</td><td class="fail">Failed — rate limited</td></tr>
+        </tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Workflow ${d[4]?'disabled':'enabled'}')">${d[4]?'Disable':'Enable'}</button><button class="btn" onclick="toast('Test event sent')">Run test</button></div>
+      </div>`);
+  }
 </script></body></html>

@@ -37,7 +37,7 @@
 <script src="assets/shell.js"></script>
 <script>
   const rows = WORKLOADS.map(w=>`
-    <tr data-cluster="${w.cluster}" onclick='openWorkload("${w.name}")'>
+    <tr data-cluster="${w.cluster}" data-namespace="${w.ns}" onclick='openWorkload("${w.name}")'>
       <td class="strong">${w.name}<div class="cellsub">${w.kind}</div></td>
       <td class="muted">${w.cluster}</td><td class="muted">${w.ns}</td>
       <td class="num">${w.replicas}</td>

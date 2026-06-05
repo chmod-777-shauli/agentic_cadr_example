@@ -17,5 +17,23 @@
   const data=[["payments-api","payments","Overly permissive",312,118],["auth-service","auth","Optimized",96,96],["edge-proxy","prod","Overly permissive",289,131],["batch-worker","data","Missing",0,0]];
   const c={"Optimized":"#049d54","Overly permissive":"#e11900","Missing":"#fb9000"};
   document.getElementById("t").innerHTML = table([{t:"Workload"},{t:"Namespace"},{t:"Status"},{t:"Syscalls allowed",cls:"num"},{t:"Syscalls used",cls:"num"}],
-    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="status-dot" style="background:${c[d[2]]}"></span>${d[2]}</td><td class="num">${d[3]}</td><td class="num">${d[4]}</td></tr>`).join(""));
+    data.map(d=>`<tr data-namespace="${d[1]}" onclick='openSec(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="status-dot" style="background:${c[d[2]]}"></span>${d[2]}</td><td class="num">${d[3]}</td><td class="num">${d[4]}</td></tr>`).join(""));
+
+  function openSec(d){
+    const removable = d[3]-d[4];
+    openDrawer(`<div class="drawer-head"><div><span class="status-dot" style="background:${c[d[2]]}"></span>${d[2]}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[4]} of ${d[3]} allowed syscalls actually used</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="banner info" style="margin-bottom:14px">Tightening this profile removes <b style="margin:0 4px">${removable}</b> unused syscalls (↓${Math.round(removable/(d[3]||1)*100)}%).</div>
+        <div class="section-label">Dangerous syscalls still allowed but unused</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td class="mono">ptrace</td><td class="muted">debugging / injection</td><td class="fail">unused</td></tr>
+          <tr><td class="mono">mount</td><td class="muted">filesystem escape</td><td class="fail">unused</td></tr>
+          <tr><td class="mono">setns</td><td class="muted">namespace switch</td><td class="fail">unused</td></tr>
+          <tr><td class="mono">bpf</td><td class="muted">kernel programs</td><td class="fail">unused</td></tr>
+        </tbody></table></div>
+        <div class="section-label">Workload</div>
+        <div class="xref" onclick='openWorkload("${d[0]}")'><div><div class="xref-t">${d[0]}</div><div class="xref-s">${d[1]}</div></div><span class="arrow">›</span></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Optimized profile applied to ${d[0]}')">Apply optimized profile</button><button class="btn" onclick="toast('Profile downloaded')">Download</button></div>
+      </div>`);
+  }
 </script></body></html>
