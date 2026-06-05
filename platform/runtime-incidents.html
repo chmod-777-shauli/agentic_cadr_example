@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Runtime Incidents</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="runtime-incidents" data-title="Runtime Incidents">
+
+  <div class="page-head">
+    <div><h1>Runtime Incidents</h1><div class="sub">Behavioral, malware, network &amp; cloud (CDR) detections with AI classification</div></div>
+    <div class="page-actions"><button class="btn">Response policies</button><button class="btn primary">Export</button></div>
+  </div>
+
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card"><div class="card-head" style="margin-bottom:8px"><h3>By classification</h3></div><div id="byClass"></div></div>
+    <div class="card kpi"><div class="kpi-label">Active threats</div><div class="kpi-num" style="color:var(--sev-high)">4</div><div class="kpi-delta up">Need attention</div></div>
+    <div class="card kpi"><div class="kpi-label">Open incidents</div><div class="kpi-num">11</div></div>
+    <div class="card"><div class="card-head" style="margin-bottom:8px"><h3>Trend (14d)</h3></div><div id="trend"></div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pill on">Status: Open, Investigating ✕</div>
+    <div class="filter-pill">Severity ▾</div>
+    <div class="filter-pill">Classification ▾</div>
+    <div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">MITRE ▾</div>
+    <div class="grow"></div>
+    <div class="tb-pill">Group by: None ▾</div>
+    <span class="count-note" id="cnt"></span>
+  </div>
+
+  <div id="incTable"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+  const byc={}; INCIDENTS.forEach(i=>byc[i.classification]=(byc[i.classification]||0)+1);
+  document.getElementById("byClass").innerHTML = Object.entries(byc).map(([c,n])=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><b style="color:${CLASS_COLOR[c]};font-size:16px;width:18px">${n}</b>${clsf(c)}</div>`).join("");
+  document.getElementById("trend").innerHTML = spark([5,7,6,9,8,11,9,12,10,8,11,9,13,11], "#e11900", 50);
+
+  const rows = INCIDENTS.map(i=>`
+    <tr onclick='openInc(${JSON.stringify(i).replace(/'/g,"&#39;")})'>
+      <td>${sev(i.sev)}</td>
+      <td class="strong">${i.name}<div class="cellsub">${i.mitre}</div></td>
+      <td>${clsf(i.classification)}</td>
+      <td class="muted">${i.cluster} / ${i.ns}<div class="cellsub">${i.workload}</div></td>
+      <td><span class="tag">${i.status}</span></td>
+      <td>${i.response?`<span class="chip" style="color:#053CA1;background:#eef3ff"><span class="dot" style="background:#053CA1"></span>${i.response}</span>`:'<span class="muted">—</span>'}</td>
+      <td>${i.ticket?`<span class="tag">🎫 ${i.ticket}</span>`:'<span class="muted">—</span>'}</td>
+      <td class="muted">${i.time}</td></tr>`).join("");
+  document.getElementById("incTable").innerHTML = table(
+    [{t:"Severity"},{t:"Threat"},{t:"Classification"},{t:"Resource"},{t:"Status"},{t:"Response"},{t:"Ticket"},{t:"First seen"}], rows);
+  document.getElementById("cnt").textContent = INCIDENTS.length + " incidents";
+
+  function openInc(i){
+    openDrawer(`<div class="drawer-head"><div>${sev(i.sev)} ${clsf(i.classification)}<h2>${i.name}</h2><div class="muted" style="margin-top:6px">${i.cluster} / ${i.ns} / ${i.workload} · ${i.time}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="banner info" style="margin-bottom:14px">✦ AI: classified as <b style="margin:0 4px">${CLASS_LABEL[i.classification]}</b> — ${i.classification==='ActiveThreat'?'confirmed malicious activity with outbound C2 behavior.':'unusual activity requiring analyst review.'}</div>
+        <div class="section-label">Attack story</div>
+        <p>The workload <b>${i.workload}</b> exhibited behavior matching <b>${i.name.toLowerCase()}</b> (MITRE: ${i.mitre}). ARMO correlated the process tree, network egress and the workload's learned profile to raise this incident.</p>
+        <div class="section-label">Affected resource</div>
+        <div class="kv"><div class="k">Cluster</div><div class="v">${i.cluster}</div><div class="k">Namespace</div><div class="v">${i.ns}</div><div class="k">Workload</div><div class="v">${i.workload}</div><div class="k">MITRE tactic</div><div class="v">${i.mitre}</div></div>
+        <div class="section-label">Events</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td class="mono">14:32:01</td><td>Process exec: /bin/sh -i</td></tr>
+          <tr><td class="mono">14:32:01</td><td>Outbound TCP → 185.220.101.42:4444</td></tr>
+          <tr><td class="mono">14:32:04</td><td>Read /etc/passwd</td></tr>
+        </tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn primary">Change status</button><button class="btn">Reclassify</button><button class="btn">Respond</button><button class="btn">Create ticket</button></div>
+      </div>`);
+  }
+</script>
+</body>
+</html>

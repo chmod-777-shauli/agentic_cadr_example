@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Workflows</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="workflows" data-title="Workflows">
+  <div class="page-head"><div><h1>Workflows</h1><div class="sub">Automate notifications and ticketing when findings match a trigger</div></div>
+  <div class="page-actions"><button class="btn primary">Create workflow</button></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Workflows</div><div class="kpi-num">12</div></div>
+    <div class="card kpi"><div class="kpi-label">Triggered (7d)</div><div class="kpi-num">438</div></div>
+    <div class="card kpi"><div class="kpi-label">Tickets created</div><div class="kpi-num">61</div></div>
+    <div class="card kpi"><div class="kpi-label">Failures</div><div class="kpi-num" style="color:var(--sev-high)">2</div></div>
+  </div>
+  <div class="toolbar"><div class="filter-pill on">Enabled ✕</div><div class="filter-pill">Channel ▾</div><div class="grow"></div></div>
+  <div id="t"></div>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  const data=[["Critical CVE → Jira","New Critical vulnerability","Create Jira ticket","Jira",true,128],["Active threat → Slack","Incident classified Active threat","Notify #secops","Slack",true,54],["New attack path → Slack + Jira","New attack path","Notify + ticket","Slack, Jira",true,17],["Weekly posture digest","Schedule: Monday 9am","Email summary","Email",true,8],["Compliance drift → Teams","Framework score drops >5%","Notify channel","Teams",false,0]];
+  document.getElementById("t").innerHTML = table([{t:"Workflow"},{t:"Trigger"},{t:"Action"},{t:"Channel"},{t:"Enabled"},{t:"Runs (7d)",cls:"num"}],
+    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td>${d[2]}</td><td><span class="tag">${d[3]}</span></td><td>${d[4]?'<span class="pass">On</span>':'<span class="muted">Off</span>'}</td><td class="num">${d[5]}</td></tr>`).join(""));
+</script></body></html>

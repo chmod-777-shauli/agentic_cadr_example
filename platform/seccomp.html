@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Seccomp Profiles</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="seccomp" data-title="Seccomp Profiles">
+  <div class="page-head"><div><h1>Seccomp Profiles</h1><div class="sub">Generated seccomp profiles from observed syscalls — tighten the kernel attack surface</div></div>
+  <div class="page-actions"><button class="btn primary">Export profile</button></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Optimized</div><div class="kpi-num pass">61</div></div>
+    <div class="card kpi"><div class="kpi-label">Overly permissive</div><div class="kpi-num" style="color:var(--sev-high)">28</div></div>
+    <div class="card kpi"><div class="kpi-label">Missing</div><div class="kpi-num" style="color:var(--sev-med)">19</div></div>
+    <div class="card kpi"><div class="kpi-label">Syscalls reduced</div><div class="kpi-num">↓ 64%</div></div>
+  </div>
+  <div class="toolbar"><div class="filter-pill on">Status: Overly permissive ✕</div><div class="filter-pill">Cluster ▾</div><div class="grow"></div></div>
+  <div id="t"></div>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  const data=[["payments-api","payments","Overly permissive",312,118],["auth-service","auth","Optimized",96,96],["edge-proxy","prod","Overly permissive",289,131],["batch-worker","data","Missing",0,0]];
+  const c={"Optimized":"#049d54","Overly permissive":"#e11900","Missing":"#fb9000"};
+  document.getElementById("t").innerHTML = table([{t:"Workload"},{t:"Namespace"},{t:"Status"},{t:"Syscalls allowed",cls:"num"},{t:"Syscalls used",cls:"num"}],
+    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="status-dot" style="background:${c[d[2]]}"></span>${d[2]}</td><td class="num">${d[3]}</td><td class="num">${d[4]}</td></tr>`).join(""));
+</script></body></html>

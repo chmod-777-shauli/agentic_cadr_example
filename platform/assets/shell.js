@@ -1,0 +1,100 @@
+/* ============================================================================
+   ARMO Platform mockup — app shell (sidebar + topbar) injected into each page.
+   Each page sets document.body.dataset.page + data-title; this wraps the body
+   content with the chrome and marks the active nav item.
+   Nav structure mirrors libs/.../main-side-nav-menu.config.ts
+   ========================================================================== */
+const ARMO_LOGO = `<svg viewBox="0 0 250 80" height="22" fill="#fff" xmlns="http://www.w3.org/2000/svg"><path d="M101.19,63.7h11.87a.81.81,0,0,0,.67-1.27L103.36,47.62a.48.48,0,0,1,.19-.71,14.29,14.29,0,0,0,5.79-4.8,15.26,15.26,0,0,0,2.43-8.85v-1a15.71,15.71,0,0,0-2.4-8.91,14.83,14.83,0,0,0-6.86-5.44A27.77,27.77,0,0,0,91.88,16H73.07a.81.81,0,0,0-.81.81V62.9a.8.8,0,0,0,.81.8H83.5a.81.81,0,0,0,.81-.8V50a.81.81,0,0,1,.81-.81h5.61a.79.79,0,0,1,.67.36l9.12,13.78A.79.79,0,0,0,101.19,63.7ZM84.31,27a.81.81,0,0,1,.81-.81H92.6a7.67,7.67,0,0,1,3.69.84,6,6,0,0,1,2.43,2.4,7.46,7.46,0,0,1,.87,3.69,7.33,7.33,0,0,1-.87,3.63,6.07,6.07,0,0,1-2.43,2.39,7.68,7.68,0,0,1-3.69.85H85.12a.81.81,0,0,1-.81-.81Z"/><path d="M158.11,16.42a.81.81,0,0,0-.75.52l-9.8,23.7a.32.32,0,0,1-.6,0l-9.86-23.7a.81.81,0,0,0-.76-.52H121a.81.81,0,0,0-.81.81V62.9a.8.8,0,0,0,.81.8h9.39a.81.81,0,0,0,.81-.8V31.05a.48.48,0,0,1,.93-.18l9.1,22.8a.8.8,0,0,0,.75.51h9.85a.8.8,0,0,0,.75-.51l9.16-23.09a.48.48,0,0,1,.93.18V62.9a.81.81,0,0,0,.81.8h10.3a.8.8,0,0,0,.81-.8V17.23a.81.81,0,0,0-.81-.81Z"/><path d="M207.36,65a26.48,26.48,0,0,1-11.27-2.23,23.52,23.52,0,0,1-8-5.9,25.19,25.19,0,0,1-4.73-7.93,24.09,24.09,0,0,1-1.55-8.29V39.22a24.69,24.69,0,0,1,1.61-8.77,23.5,23.5,0,0,1,12.86-13.38,30.32,30.32,0,0,1,22,0,23.49,23.49,0,0,1,8,5.57,24.43,24.43,0,0,1,6.54,16.58v1.43a23.7,23.7,0,0,1-1.59,8.29,25.47,25.47,0,0,1-4.76,7.93,23.52,23.52,0,0,1-8,5.9A26.29,26.29,0,0,1,207.36,65Zm0-11.27a14,14,0,0,0,5.57-1,12,12,0,0,0,4.21-2.91,12.74,12.74,0,0,0,2.66-4.37,15.83,15.83,0,0,0,.91-5.41,16.18,16.18,0,0,0-.94-5.63A12.34,12.34,0,0,0,217.08,30a11.84,11.84,0,0,0-4.21-2.79,14.86,14.86,0,0,0-5.51-1,15,15,0,0,0-5.57,1A11.84,11.84,0,0,0,197.58,30a12,12,0,0,0-2.65,4.34A16.42,16.42,0,0,0,194,40a15.59,15.59,0,0,0,.91,5.41,12.72,12.72,0,0,0,2.65,4.37,12.13,12.13,0,0,0,4.21,2.91A14.08,14.08,0,0,0,207.36,53.73Z"/><path d="M50.69,16.42H32.57a.8.8,0,0,0-.77.57L17.16,62.65a.8.8,0,0,0,.77,1.05h47.9a.81.81,0,0,0,.77-1.06L51.46,17A.82.82,0,0,0,50.69,16.42ZM32.19,52.81l8-26.1a.8.8,0,0,1,.77-.57h1.23a.8.8,0,0,1,.77.57l8.18,26.1a.81.81,0,0,1-.77,1H33A.81.81,0,0,1,32.19,52.81Z"/></svg>`;
+
+function ic(p){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`; }
+const ICONS = {
+  dashboard: ic('<rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/>'),
+  inventory: ic('<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/>'),
+  risks: ic('<path d="M12 2l9 4v6c0 5-3.5 8.5-9 10C6.5 20.5 3 17 3 12V6l9-4z"/>'),
+  attack: ic('<circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M6 8l5 8M18 8l-5 8"/>'),
+  vuln: ic('<path d="M12 2v4M12 18v4M4 12H2M22 12h-2M6 6l-1.5-1.5M18 6l1.5-1.5"/><rect x="8" y="8" width="8" height="8" rx="2"/>'),
+  compliance: ic('<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>'),
+  network: ic('<circle cx="12" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><circle cx="19" cy="19" r="2"/><path d="M12 7v4M12 11l-5 6M12 11l5 6"/>'),
+  seccomp: ic('<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/>'),
+  rbac: ic('<circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M17 11l2 2 4-4"/>'),
+  threat: ic('<path d="M12 2l3 3h4v4l3 3-3 3v4h-4l-3 3-3-3H5v-4l-3-3 3-3V5h4z"/><circle cx="12" cy="12" r="2"/>'),
+  repo: ic('<path d="M4 4v16a1 1 0 0 0 1 1h15"/><path d="M7 16l4-4 3 3 5-6"/>'),
+  registry: ic('<rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/>'),
+  accept: ic('<path d="M12 2l9 4v6c0 5-3.5 8.5-9 10C6.5 20.5 3 17 3 12V6l9-4z"/><path d="M9 12l2 2 4-4"/>'),
+  rules: ic('<path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="14" r="3"/>'),
+  workflows: ic('<rect x="3" y="3" width="6" height="6" rx="1"/><rect x="15" y="15" width="6" height="6" rx="1"/><path d="M9 6h6a3 3 0 0 1 3 3v6"/>'),
+  settings: ic('<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1l2-1.5-2-3.5-2.4 1a7 7 0 0 0-1.7-1l-.3-2.5h-4l-.3 2.5a7 7 0 0 0-1.7 1l-2.4-1-2 3.5L5 11a7 7 0 0 0 0 2l-2 1.5 2 3.5 2.4-1a7 7 0 0 0 1.7 1l.3 2.5h4l.3-2.5a7 7 0 0 0 1.7-1l2.4 1 2-3.5-2-1.5a7 7 0 0 0 .1-1z"/>'),
+};
+
+const NAV = [
+  { items: [ {k:"dashboard", t:"Dashboard", href:"index.html", icon:"dashboard"} ] },
+  { cat:"Visibility", items: [ {k:"inventory", t:"Inventory", href:"inventory.html", icon:"inventory"} ] },
+  { cat:"Posture", items: [
+      {k:"security-risks", t:"Security Risks", href:"security-risks.html", icon:"risks"},
+      {k:"attack-path", t:"Attack Path", href:"attack-path.html", icon:"attack"},
+      {k:"vulnerabilities", t:"Vulnerabilities", href:"vulnerabilities.html", icon:"vuln"},
+      {k:"compliance", t:"Compliance", href:"compliance.html", icon:"compliance"},
+      {k:"network-policies", t:"Network Policies", href:"network-policies.html", icon:"network"},
+      {k:"seccomp", t:"Seccomp Profiles", href:"seccomp.html", icon:"seccomp"},
+      {k:"rbac", t:"RBAC Insights", href:"rbac.html", icon:"rbac"},
+  ]},
+  { cat:"Threat Detection", items: [ {k:"runtime-incidents", t:"Runtime Incidents", href:"runtime-incidents.html", icon:"threat"} ] },
+  { cat:"Code", items: [
+      {k:"repository-scanning", t:"Repository Scanning", href:"repository-scanning.html", icon:"repo"},
+      {k:"registry-scanning", t:"Registry Scanning", href:"registry-scanning.html", icon:"registry"},
+  ]},
+  { cat:"Policies", items: [
+      {k:"risk-acceptance", t:"Risk Acceptance", href:"risk-acceptance.html", icon:"accept"},
+      {k:"threat-detection-policies", t:"Threat Detection", href:"threat-detection-policies.html", icon:"rules"},
+      {k:"workflows", t:"Workflows", href:"workflows.html", icon:"workflows"},
+  ]},
+];
+
+(function buildShell(){
+  const page = document.body.dataset.page || "dashboard";
+  const title = document.body.dataset.title || "Dashboard";
+
+  // move existing body content into a holder
+  const content = document.createElement("div");
+  while (document.body.firstChild) content.appendChild(document.body.firstChild);
+
+  const navHtml = NAV.map(g => `
+    ${g.cat ? `<div class="sb-cat">${g.cat}</div>` : ``}
+    ${g.items.map(it => `<a class="sb-item ${it.k===page?'active':''}" href="${it.href}">${ICONS[it.icon]||''}<span>${it.t}</span></a>`).join("")}
+  `).join("");
+
+  document.body.innerHTML = `
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="sb-logo">${ARMO_LOGO}</div>
+        <nav>${navHtml}</nav>
+        <div class="sb-foot"><a class="sb-item ${page==='settings'?'active':''}" href="settings.html">${ICONS.settings}<span>Settings</span></a></div>
+      </aside>
+      <div class="main-wrap">
+        <header class="topbar">
+          <div class="crumbs">ARMO <span>›</span> <b>${title}</b></div>
+          <div class="spacer"></div>
+          <div class="tb-pill">All clusters ▾</div>
+          <div class="tb-search">🔍<input placeholder="Search resources, CVEs, controls…"></div>
+          <div class="tb-pill">Last 7 days ▾</div>
+          <div class="tb-ava">S</div>
+        </header>
+        <main class="main" id="main"></main>
+      </div>
+    </div>
+    <div id="scrim" onclick="closeDrawer()"></div>
+    <aside class="drawer" id="drawer"><div id="drawerContent"></div></aside>`;
+  document.getElementById("main").appendChild(content);
+})();
+
+/* shared drawer (detail side panel) */
+function openDrawer(html){
+  document.getElementById("drawerContent").innerHTML = html;
+  document.getElementById("drawer").classList.add("open");
+  document.getElementById("scrim").classList.add("show");
+}
+function closeDrawer(){
+  document.getElementById("drawer").classList.remove("open");
+  document.getElementById("scrim").classList.remove("show");
+}
+document.addEventListener("keydown", e => { if(e.key==="Escape") closeDrawer(); });

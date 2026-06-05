@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Security Risks</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="security-risks" data-title="Security Risks">
+
+  <div class="page-head">
+    <div><h1>Security Risks</h1><div class="sub">Prioritized, deduplicated risks across posture, vulnerabilities and attack paths</div></div>
+    <div class="page-actions"><button class="btn">Export</button></div>
+  </div>
+
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Total risks</div><div class="kpi-num">28</div></div>
+    <div class="card kpi"><div class="kpi-label">Critical</div><div class="kpi-num" style="color:var(--sev-crit)">6</div></div>
+    <div class="card kpi"><div class="kpi-label">Affected resources</div><div class="kpi-num">213</div></div>
+    <div class="card kpi"><div class="kpi-label">Accepted</div><div class="kpi-num">9</div></div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pill on">Severity: Critical, High ✕</div>
+    <div class="filter-pill">Category ▾</div>
+    <div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">Framework ▾</div>
+    <div class="grow"></div>
+    <span class="count-note" id="cnt"></span>
+  </div>
+
+  <div id="riskTable"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+  const rows = SECURITY_RISKS.map(r=>`
+    <tr onclick='openRisk(${JSON.stringify(r).replace(/'/g,"&#39;")})'>
+      <td>${sev(r.sev)}</td>
+      <td class="strong">${r.name}<div class="cellsub">${r.id} · ${r.cluster}</div></td>
+      <td>${r.category}</td>
+      <td class="num strong">${r.score}</td>
+      <td class="num">${r.resources}</td>
+      <td>${r.frameworks.map(f=>`<span class="tag">${f}</span>`).join(" ")}</td>
+      <td class="muted">›</td>
+    </tr>`).join("");
+  document.getElementById("riskTable").innerHTML = table(
+    [{t:"Severity"},{t:"Risk"},{t:"Category"},{t:"Risk score",cls:"num"},{t:"Resources",cls:"num"},{t:"Frameworks"},{t:""}], rows);
+  document.getElementById("cnt").textContent = SECURITY_RISKS.length + " risks";
+
+  function openRisk(r){
+    openDrawer(`
+      <div class="drawer-head">
+        <div>${sev(r.sev)}<h2>${r.name}</h2><div class="muted" style="margin-top:6px">${r.id} · ${r.category}</div></div>
+        <div class="x" onclick="closeDrawer()">✕</div>
+      </div>
+      <div class="drawer-body">
+        <div class="grid cols-3">
+          <div class="card kpi"><div class="kpi-label">Risk score</div><div class="kpi-num" style="font-size:24px">${r.score}</div></div>
+          <div class="card kpi"><div class="kpi-label">Resources</div><div class="kpi-num" style="font-size:24px">${r.resources}</div></div>
+          <div class="card kpi"><div class="kpi-label">Cluster</div><div class="kpi-num" style="font-size:16px;margin-top:10px">${r.cluster}</div></div>
+        </div>
+        <div class="section-label">Description</div>
+        <p>This risk groups all resources where <b>${r.name.toLowerCase()}</b>. Attackers can leverage this misconfiguration to escalate privileges or move laterally within the cluster. ARMO correlates configuration, runtime and reachability signals to prioritize it.</p>
+        <div class="section-label">Frameworks</div>
+        <div>${r.frameworks.map(f=>`<span class="tag" style="margin-right:6px">${f}</span>`).join("")}</div>
+        <div class="section-label">Affected resources (${r.resources})</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td class="strong">payments-api</td><td class="muted">Deployment · payments</td><td>${sev(r.sev)}</td></tr>
+          <tr><td class="strong">auth-service</td><td class="muted">Deployment · auth</td><td>${sev(r.sev)}</td></tr>
+          <tr><td class="strong">edge-proxy</td><td class="muted">DaemonSet · prod</td><td>${sev(r.sev)}</td></tr>
+        </tbody></table></div>
+        <div class="section-label">Remediation</div>
+        <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap">securityContext:
+  runAsNonRoot: true
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true</div>
+        <div style="display:flex;gap:8px;margin-top:18px">
+          <button class="btn primary">Create ticket</button>
+          <button class="btn">Accept risk</button>
+          <button class="btn">View attack path</button>
+        </div>
+      </div>`);
+  }
+</script>
+</body>
+</html>

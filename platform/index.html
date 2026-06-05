@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Dashboard</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="dashboard" data-title="Dashboard">
+
+  <div class="page-head">
+    <div><h1>Security posture overview</h1><div class="sub">Across 4 clusters · 312 workloads · last scan 18 minutes ago</div></div>
+    <div class="page-actions"><button class="btn">Export</button><button class="btn primary">Run scan</button></div>
+  </div>
+
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Security risks</div><div class="kpi-num" style="color:var(--sev-crit)">28</div><div class="kpi-delta up">▲ 4 this week</div><div class="kpi-spark" id="k1"></div></div>
+    <div class="card kpi"><div class="kpi-label">Open runtime incidents</div><div class="kpi-num" style="color:var(--sev-high)">11</div><div class="kpi-delta up">▲ 3 today</div><div class="kpi-spark" id="k2"></div></div>
+    <div class="card kpi"><div class="kpi-label">Critical & High CVEs</div><div class="kpi-num">147</div><div class="kpi-delta down">▼ 12 this week</div><div class="kpi-spark" id="k3"></div></div>
+    <div class="card kpi"><div class="kpi-label">Compliance score</div><div class="kpi-num" style="color:var(--sev-med)">72%</div><div class="kpi-delta down">▲ 3% this week</div><div class="kpi-spark" id="k4"></div></div>
+  </div>
+
+  <div class="grid cols-3" style="margin-bottom:16px">
+    <div class="card">
+      <div class="card-head"><h3>Risk by severity</h3></div>
+      <div class="gauge-row"><div id="riskDonut"></div><div id="riskLegend" style="flex:1"></div></div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Risk trend (30d)</h3><span class="more">Security Risks →</span></div>
+      <div id="trend"></div>
+      <div class="note">New vs. resolved security findings over the last 30 days.</div>
+    </div>
+    <div class="card">
+      <div class="card-head"><h3>Cluster coverage</h3></div>
+      <div id="coverage" class="hbars"></div>
+      <div class="note">Workloads with an active runtime sensor.</div>
+    </div>
+  </div>
+
+  <div class="grid cols-2" style="margin-bottom:16px">
+    <div class="card"><div class="card-head"><h3>Top security risks</h3><a class="more" href="security-risks.html">View all →</a></div><div id="topRisks"></div></div>
+    <div class="card"><div class="card-head"><h3>Top failed controls</h3><a class="more" href="compliance.html">View all →</a></div><div id="topControls"></div></div>
+  </div>
+
+  <div class="card pad0">
+    <div class="card-head" style="padding:14px 18px 0;margin:0"><h3>Recent runtime incidents</h3><a class="more" href="runtime-incidents.html">View all →</a></div>
+    <div id="recentIncidents" style="margin-top:10px"></div>
+  </div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+  document.getElementById("k1").innerHTML = spark([18,20,19,22,21,24,28], "#6b0047");
+  document.getElementById("k2").innerHTML = spark([6,5,8,7,9,8,11], "#e11900");
+  document.getElementById("k3").innerHTML = spark([180,176,170,165,159,152,147], "#049d54");
+  document.getElementById("k4").innerHTML = spark([66,67,69,68,70,71,72], "#fb9000");
+
+  const riskSeg = [
+    {label:"Critical", value:6, color:SEV_COLOR.Critical},
+    {label:"High", value:9, color:SEV_COLOR.High},
+    {label:"Medium", value:8, color:SEV_COLOR.Medium},
+    {label:"Low", value:5, color:SEV_COLOR.Low},
+  ];
+  document.getElementById("riskDonut").innerHTML = donut(riskSeg);
+  document.getElementById("riskLegend").innerHTML = legend(riskSeg);
+
+  // trend: two overlaid sparklines
+  document.getElementById("trend").innerHTML =
+    `<svg class="spark" viewBox="0 0 160 60" preserveAspectRatio="none" style="height:60px">
+      <polyline fill="none" stroke="#e11900" stroke-width="2.2" points="0,40 20,34 40,38 60,28 80,30 100,22 120,26 140,16 160,20"/>
+      <polyline fill="none" stroke="#049d54" stroke-width="2.2" points="0,50 20,48 40,46 60,44 80,42 100,40 120,38 140,36 160,34"/>
+    </svg>
+    <div class="legend" style="flex-direction:row;gap:18px;margin-top:8px">
+      <div class="it"><i style="background:#e11900"></i>New</div><div class="it"><i style="background:#049d54"></i>Resolved</div></div>`;
+
+  document.getElementById("coverage").innerHTML = hbars([
+    {nm:"prod-eu-1", v:98, color:"#049d54"},
+    {nm:"prod-us-1", v:96, color:"#049d54"},
+    {nm:"staging-eu-1", v:82, color:"#fb9000"},
+    {nm:"dev-1", v:61, color:"#e11900"},
+  ]);
+
+  document.getElementById("topRisks").innerHTML = hbars(
+    SECURITY_RISKS.slice(0,6).map(r=>({nm:r.name, v:r.score, color:SEV_COLOR[r.sev]}))
+  );
+  document.getElementById("topControls").innerHTML = hbars(
+    CONTROLS.filter(c=>c.status==="fail").slice(0,6).map(c=>({nm:c.name, v:c.failed, color:SEV_COLOR[c.sev]}))
+  );
+
+  const rows = INCIDENTS.slice(0,6).map(i=>`
+    <tr onclick="location.href='runtime-incidents.html'">
+      <td>${sev(i.sev)}</td>
+      <td class="strong">${i.name}</td>
+      <td>${clsf(i.classification)}</td>
+      <td class="muted">${i.cluster} / ${i.ns}</td>
+      <td><span class="tag">${i.status}</span></td>
+      <td class="muted">${i.time}</td>
+    </tr>`).join("");
+  document.getElementById("recentIncidents").innerHTML = table(
+    [{t:"Severity"},{t:"Threat"},{t:"Classification"},{t:"Resource"},{t:"Status"},{t:"First seen"}], rows
+  ).replace('tbl-wrap"','tbl-wrap" style="border:0;border-radius:0;box-shadow:none"');
+</script>
+</body>
+</html>

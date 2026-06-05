@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Inventory</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="inventory" data-title="Inventory">
+
+  <div class="page-head">
+    <div><h1>Inventory</h1><div class="sub">Every workload, host and cloud asset ARMO observes — with its risk &amp; runtime context</div></div>
+    <div class="page-actions"><button class="btn">Export</button></div>
+  </div>
+
+  <div class="grid cols-6" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Workloads</div><div class="kpi-num">312</div></div>
+    <div class="card kpi"><div class="kpi-label">Clusters</div><div class="kpi-num">4</div></div>
+    <div class="card kpi"><div class="kpi-label">Namespaces</div><div class="kpi-num">37</div></div>
+    <div class="card kpi"><div class="kpi-label">Hosts</div><div class="kpi-num">48</div></div>
+    <div class="card kpi"><div class="kpi-label">Containers</div><div class="kpi-num">1,204</div></div>
+    <div class="card kpi"><div class="kpi-label">Cloud accounts</div><div class="kpi-num">3</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">Workloads</div><div class="tab">Hosts</div><div class="tab">Clusters</div><div class="tab">Cloud</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div><div class="filter-pill">Kind ▾</div>
+    <div class="filter-pill on">Runtime: monitored ✕</div>
+    <div class="grow"></div><span class="count-note" id="cnt"></span>
+  </div>
+
+  <div id="invTable"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+  const rows = WORKLOADS.map(w=>`
+    <tr onclick="closeDrawer()">
+      <td class="strong">${w.name}<div class="cellsub">${w.kind}</div></td>
+      <td class="muted">${w.cluster}</td><td class="muted">${w.ns}</td>
+      <td class="num">${w.replicas}</td>
+      <td>${sev(w.risk)}</td>
+      <td class="num">${w.cves}</td>
+      <td>${w.runtime?'<span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>Monitored</span>':'<span class="muted">No sensor</span>'}</td></tr>`).join("");
+  document.getElementById("invTable").innerHTML = table(
+    [{t:"Workload"},{t:"Cluster"},{t:"Namespace"},{t:"Replicas",cls:"num"},{t:"Risk"},{t:"CVEs",cls:"num"},{t:"Runtime"}], rows);
+  document.getElementById("cnt").textContent = WORKLOADS.length + " of 312 workloads";
+</script>
+</body>
+</html>

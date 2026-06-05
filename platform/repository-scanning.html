@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Repository Scanning</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="repository-scanning" data-title="Repository Scanning">
+  <div class="page-head"><div><h1>Repository Scanning</h1><div class="sub">IaC misconfigurations, secrets and manifest issues in connected Git repositories</div></div>
+  <div class="page-actions"><button class="btn primary">Connect repository</button></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Repositories</div><div class="kpi-num">14</div></div>
+    <div class="card kpi"><div class="kpi-label">IaC misconfigs</div><div class="kpi-num" style="color:var(--sev-high)">86</div></div>
+    <div class="card kpi"><div class="kpi-label">Exposed secrets</div><div class="kpi-num" style="color:var(--sev-crit)">3</div></div>
+    <div class="card kpi"><div class="kpi-label">PRs opened</div><div class="kpi-num">22</div></div>
+  </div>
+  <div class="toolbar"><div class="filter-pill">Provider ▾</div><div class="filter-pill on">Has findings ✕</div><div class="grow"></div></div>
+  <div id="t"></div>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  const data=[["armosec/payments-api","GitHub","main",{Critical:1,High:6,Medium:9},"2h ago"],["armosec/infra-terraform","GitHub","main",{Critical:2,High:12,Medium:21},"4h ago"],["armosec/helm-charts","GitHub","main",{Critical:0,High:4,Medium:7},"1d ago"],["armosec/auth-service","GitLab","develop",{Critical:0,High:3,Medium:5},"6h ago"]];
+  document.getElementById("t").innerHTML = table([{t:"Repository"},{t:"Provider"},{t:"Branch"},{t:"Findings"},{t:"Last scan"}],
+    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="mono muted">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td class="muted">${d[4]}</td></tr>`).join(""));
+</script></body></html>

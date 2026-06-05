@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Compliance</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="compliance" data-title="Compliance">
+
+  <div class="page-head">
+    <div><h1>Compliance</h1><div class="sub">Configuration scanning against security frameworks · Kubernetes</div></div>
+    <div class="page-actions"><button class="btn">Custom framework</button><button class="btn primary">Generate report</button></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active">Kubernetes</div>
+    <div class="tab">Cloud</div>
+  </div>
+
+  <div class="section-label" style="margin-top:0">Frameworks</div>
+  <div class="grid cols-3" id="fw" style="margin-bottom:8px"></div>
+
+  <div class="card" style="margin:18px 0">
+    <div class="card-head"><h3>Failed controls</h3><span class="count-note" id="cnt"></span></div>
+    <div class="toolbar">
+      <div class="filter-pill on">Status: Failed ✕</div>
+      <div class="filter-pill">Severity ▾</div>
+      <div class="filter-pill">Framework ▾</div>
+    </div>
+    <div id="controls"></div>
+  </div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+  function ring(score){
+    const c = score>=80?'#049d54':score>=65?'#fb9000':'#e11900';
+    const deg = score*3.6;
+    return `<div class="score-ring" style="border-radius:50%;background:conic-gradient(${c} ${deg}deg,#eef1f6 0)"><div style="width:48px;height:48px;margin:8px;background:#fff;border-radius:50%;display:grid;place-items:center;font-weight:800;color:${c}">${score}</div></div>`;
+  }
+  document.getElementById("fw").innerHTML = FRAMEWORKS.map(f=>`
+    <div class="card" style="cursor:pointer" onclick="closeDrawer()">
+      <div class="gauge-row">
+        ${ring(f.score)}
+        <div><div style="font-weight:700;font-size:14px">${f.name}</div>
+        <div class="muted" style="margin-top:4px">${f.controls} controls · <span class="fail">${f.failed} failed</span></div></div>
+      </div>
+    </div>`).join("");
+
+  const failed = CONTROLS.filter(c=>c.status==="fail");
+  const rows = failed.map(c=>`
+    <tr onclick='openControl(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+      <td class="mono strong">${c.id}</td><td class="strong">${c.name}</td><td>${sev(c.sev)}</td>
+      <td style="width:220px"><div class="sevbar"><span style="flex:${c.failed};background:${SEV_COLOR[c.sev]}"></span><span style="flex:${c.total-c.failed};background:#E4F6EC"></span></div></td>
+      <td class="num"><span class="fail">${c.failed}</span> <span class="muted">/ ${c.total}</span></td></tr>`).join("");
+  document.getElementById("controls").innerHTML = table([{t:"Control"},{t:"Name"},{t:"Severity"},{t:"Failed / passed"},{t:"Resources",cls:"num"}], rows);
+  document.getElementById("cnt").textContent = failed.length + " failed controls";
+
+  function openControl(c){
+    openDrawer(`<div class="drawer-head"><div>${sev(c.sev)}<h2>${c.name}</h2><div class="muted mono" style="margin-top:6px">${c.id}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="grid cols-2"><div class="card kpi"><div class="kpi-label">Failed resources</div><div class="kpi-num fail" style="font-size:24px">${c.failed}</div></div><div class="card kpi"><div class="kpi-label">Scanned</div><div class="kpi-num" style="font-size:24px">${c.total}</div></div></div>
+        <div class="section-label">What it checks</div>
+        <p>Verifies that <b>${c.name.toLowerCase()}</b> is enforced across all workloads. Failing this control increases the blast radius of a container compromise.</p>
+        <div class="section-label">Failed resources (${c.failed})</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td class="strong">payments-api</td><td class="muted">payments · prod-eu-1</td><td class="fail">Fail</td></tr>
+          <tr><td class="strong">auth-service</td><td class="muted">auth · prod-us-1</td><td class="fail">Fail</td></tr>
+          <tr><td class="strong">edge-proxy</td><td class="muted">prod · prod-us-1</td><td class="fail">Fail</td></tr>
+        </tbody></table></div>
+        <div class="section-label">Remediation</div>
+        <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap">Set the appropriate securityContext / policy on the workload spec and re-deploy.</div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary">Create ticket</button><button class="btn">Add exception</button></div>
+      </div>`);
+  }
+</script>
+</body>
+</html>

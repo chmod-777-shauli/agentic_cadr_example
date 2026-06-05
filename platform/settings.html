@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Settings</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="settings" data-title="Settings">
+  <div class="page-head"><div><h1>Settings</h1><div class="sub">Accounts, access, integrations and billing</div></div></div>
+
+  <div class="section-label" style="margin-top:0">Workspace</div>
+  <div class="grid cols-3" id="g1"></div>
+  <div class="section-label">Integrations</div>
+  <div class="grid cols-4" id="g2"></div>
+
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  function card(t,s){ return `<div class="card" style="cursor:pointer" onclick="closeDrawer()"><div style="font-weight:700;font-size:14px;margin-bottom:4px">${t}</div><div class="muted">${s}</div></div>`; }
+  document.getElementById("g1").innerHTML = [
+    card("Cloud Accounts","3 connected · AWS, GCP"),
+    card("Kubernetes Accounts","4 clusters connected"),
+    card("Agent Access Keys","6 keys · 1 default"),
+    card("Teams","12 members · 3 roles"),
+    card("Frameworks & Controls","Custom controls, framework config"),
+    card("Billing","Enterprise plan · renews Aug 2026"),
+  ].join("");
+  document.getElementById("g2").innerHTML = [
+    card("Jira","Issue creation"),card("Slack","Notifications"),card("Linear","Issue creation"),card("GitHub Issues","Notifications"),
+    card("Microsoft Sentinel","SIEM export"),card("Splunk","SIEM export"),card("Sumo Logic","SIEM export"),card("Webhook","Custom export"),
+  ].join("");
+</script></body></html>

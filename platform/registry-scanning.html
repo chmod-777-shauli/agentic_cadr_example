@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Registry Scanning</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="registry-scanning" data-title="Registry Scanning">
+  <div class="page-head"><div><h1>Registry Scanning</h1><div class="sub">Continuous vulnerability scanning of connected container registries</div></div>
+  <div class="page-actions"><button class="btn primary">Connect registry</button></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Registries</div><div class="kpi-num">5</div></div>
+    <div class="card kpi"><div class="kpi-label">Images</div><div class="kpi-num">1,284</div></div>
+    <div class="card kpi"><div class="kpi-label">Critical images</div><div class="kpi-num" style="color:var(--sev-crit)">41</div></div>
+    <div class="card kpi"><div class="kpi-label">Scan coverage</div><div class="kpi-num pass">99%</div></div>
+  </div>
+  <div class="toolbar"><div class="filter-pill">Type ▾</div><div class="grow"></div></div>
+  <div id="t"></div>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  const data=[["docker.io/armo","Docker Hub",312,{Critical:14,High:62,Medium:120},"connected"],["ghcr.io/armo","GitHub","189",{Critical:6,High:31,Medium:74},"connected"],["123.dkr.ecr.eu-central-1","Amazon ECR",604,{Critical:18,High:88,Medium:201},"connected"],["harbor.internal","Harbor",179,{Critical:3,High:19,Medium:44},"connected"]];
+  document.getElementById("t").innerHTML = table([{t:"Registry"},{t:"Type"},{t:"Images",cls:"num"},{t:"Vulnerabilities"},{t:"Status"}],
+    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong mono">${d[0]}</td><td class="muted">${d[1]}</td><td class="num">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>Connected</span></td></tr>`).join(""));
+</script></body></html>

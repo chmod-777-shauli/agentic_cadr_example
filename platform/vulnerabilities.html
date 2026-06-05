@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Vulnerabilities</title>
+<link rel="stylesheet" href="assets/app.css">
+</head>
+<body data-page="vulnerabilities" data-title="Vulnerabilities">
+
+  <div class="page-head">
+    <div><h1>Vulnerabilities</h1><div class="sub">Image &amp; workload scanning with runtime reachability and KEV/EPSS prioritization</div></div>
+    <div class="page-actions"><button class="btn">Export SBOM</button><button class="btn primary">Scan now</button></div>
+  </div>
+
+  <div class="grid cols-6" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Critical</div><div class="kpi-num" style="color:var(--sev-crit)">12</div></div>
+    <div class="card kpi"><div class="kpi-label">High</div><div class="kpi-num" style="color:var(--sev-high)">135</div></div>
+    <div class="card kpi"><div class="kpi-label">Known-exploited</div><div class="kpi-num">8</div></div>
+    <div class="card kpi"><div class="kpi-label">Fixable</div><div class="kpi-num">119</div></div>
+    <div class="card kpi"><div class="kpi-label">Images</div><div class="kpi-num">61</div></div>
+    <div class="card kpi"><div class="kpi-label">In-use</div><div class="kpi-num">73%</div></div>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <div class="tab active" data-v="cves">CVEs</div>
+    <div class="tab" data-v="images">Images</div>
+    <div class="tab" data-v="workloads">Workloads</div>
+    <div class="tab" data-v="sbom">SBOM</div>
+    <div class="tab" data-v="hosts">Hosts</div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pill on">Fixable only ✕</div>
+    <div class="filter-pill">Severity ▾</div>
+    <div class="filter-pill">In-use ▾</div>
+    <div class="filter-pill">KEV ▾</div>
+    <div class="grow"></div><span class="count-note" id="cnt"></span>
+  </div>
+
+  <div id="vbody"></div>
+
+<script src="assets/data.js"></script>
+<script src="assets/shell.js"></script>
+<script>
+  function kev(b){ return b?`<span class="chip" style="color:#6b0047;background:#FFE8F3"><span class="dot" style="background:#6b0047"></span>KEV</span>`:'<span class="muted">—</span>'; }
+  function imgSev(o){ return sevbar({Critical:o.c,High:o.h,Medium:o.m,Low:o.l}); }
+
+  const views = {
+    cves(){
+      const rows = CVES.map(c=>`
+        <tr onclick='openCve(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
+          <td class="mono strong">${c.id}</td><td>${sev(c.sev)}</td>
+          <td class="num strong">${c.cvss.toFixed(1)}</td>
+          <td>${kev(c.kev)}</td><td class="num">${(c.epss*100).toFixed(0)}%</td>
+          <td>${c.pkg} <span class="muted">${c.version}</span></td>
+          <td class="mono pass">${c.fix}</td>
+          <td class="num">${c.images}</td><td class="num">${c.workloads}</td></tr>`).join("");
+      return table([{t:"CVE"},{t:"Severity"},{t:"CVSS",cls:"num"},{t:"Exploited"},{t:"EPSS",cls:"num"},{t:"Package"},{t:"Fixed in"},{t:"Images",cls:"num"},{t:"Workloads",cls:"num"}], rows);
+    },
+    images(){
+      const rows = VULN_IMAGES.map(i=>`
+        <tr onclick="closeDrawer()"><td class="strong">${i.image}:${i.tag}<div class="cellsub">${i.registry}</div></td>
+        <td style="width:200px">${imgSev(i)}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:i.c,High:i.h,Medium:i.m,Low:i.l})}</div></td>
+        <td class="num">${i.workloads}</td><td class="muted">${i.lastScan}</td></tr>`).join("");
+      return table([{t:"Image"},{t:"Vulnerabilities"},{t:"Workloads",cls:"num"},{t:"Last scan"}], rows);
+    },
+    workloads(){
+      const rows = VULN_WORKLOADS.map(w=>`
+        <tr><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
+        <td style="width:200px">${sevbar({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}</div></td>
+        <td>${w.inUse?'<span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span>':'<span class="muted">Not in use</span>'}</td></tr>`).join("");
+      return table([{t:"Workload"},{t:"Vulnerabilities"},{t:"Runtime"}], rows);
+    },
+    sbom(){
+      const pkgs=[["openssl","3.0.11","apk",42],["glibc","2.38","apk",61],["zlib","1.3","apk",55],["nginx","1.25.1","apk",21],["python3","3.11.6","apk",18],["libcurl","8.4.0","apk",37]];
+      return table([{t:"Component"},{t:"Version"},{t:"Type"},{t:"Images",cls:"num"}], pkgs.map(p=>`<tr><td class="strong">${p[0]}</td><td class="mono">${p[1]}</td><td><span class="tag">${p[2]}</span></td><td class="num">${p[3]}</td></tr>`).join(""));
+    },
+    hosts(){
+      const hosts=[["ip-10-2-31-4","prod-eu-1","Bottlerocket 1.19",2,9],["ip-10-4-12-9","prod-us-1","Amazon Linux 2",1,14],["ip-10-2-9-1","staging-eu-1","Ubuntu 22.04",0,7]];
+      return table([{t:"Host"},{t:"Cluster"},{t:"OS"},{t:"Critical",cls:"num"},{t:"High",cls:"num"}], hosts.map(h=>`<tr><td class="strong mono">${h[0]}</td><td class="muted">${h[1]}</td><td>${h[2]}</td><td class="num" style="color:var(--sev-crit);font-weight:700">${h[3]}</td><td class="num" style="color:var(--sev-high);font-weight:700">${h[4]}</td></tr>`).join(""));
+    }
+  };
+  function show(v){ document.getElementById("vbody").innerHTML = views[v](); document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.v===v)); document.getElementById("cnt").textContent = document.querySelectorAll("#vbody tbody tr").length + " results"; }
+  document.querySelectorAll("#tabs .tab").forEach(t=>t.onclick=()=>show(t.dataset.v));
+  show("cves");
+
+  function openCve(c){
+    openDrawer(`<div class="drawer-head"><div>${sev(c.sev)} ${kev(c.kev)}<h2 class="mono">${c.id}</h2></div><div class="x" onclick="closeDrawer()">✕</div></div>
+      <div class="drawer-body">
+        <div class="grid cols-3">
+          <div class="card kpi"><div class="kpi-label">CVSS</div><div class="kpi-num" style="font-size:24px">${c.cvss.toFixed(1)}</div></div>
+          <div class="card kpi"><div class="kpi-label">EPSS</div><div class="kpi-num" style="font-size:24px">${(c.epss*100).toFixed(0)}%</div></div>
+          <div class="card kpi"><div class="kpi-label">Fix</div><div class="kpi-num pass" style="font-size:16px;margin-top:10px">${c.fix}</div></div>
+        </div>
+        <div class="section-label">Package</div>
+        <div class="kv"><div class="k">Package</div><div class="v">${c.pkg}</div><div class="k">Installed</div><div class="v mono">${c.version}</div><div class="k">Fixed in</div><div class="v mono pass">${c.fix}</div><div class="k">Known-exploited</div><div class="v">${c.kev?'Yes (CISA KEV)':'No'}</div></div>
+        <div class="section-label">Affected (${c.workloads} workloads · ${c.images} images)</div>
+        <div class="tbl-wrap"><table class="tbl"><tbody>
+          <tr><td class="strong">payments-api</td><td class="muted">payments · prod-eu-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
+          <tr><td class="strong">edge-proxy</td><td class="muted">prod · prod-us-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
+        </tbody></table></div>
+        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary">Create ticket</button><button class="btn">Accept risk</button></div>
+      </div>`);
+  }
+</script>
+</body>
+</html>

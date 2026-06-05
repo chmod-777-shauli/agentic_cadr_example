@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Risk Acceptance</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="risk-acceptance" data-title="Risk Acceptance">
+  <div class="page-head"><div><h1>Risk Acceptance</h1><div class="sub">Accepted risks &amp; exceptions, grouped by rule, with scope and expiration</div></div>
+  <div class="page-actions"><button class="btn primary">New exception</button></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Active exceptions</div><div class="kpi-num">34</div></div>
+    <div class="card kpi"><div class="kpi-label">Expiring &lt; 30d</div><div class="kpi-num" style="color:var(--sev-med)">6</div></div>
+    <div class="card kpi"><div class="kpi-label">Expired</div><div class="kpi-num muted">3</div></div>
+    <div class="card kpi"><div class="kpi-label">Resources suppressed</div><div class="kpi-num">412</div></div>
+  </div>
+  <div class="tabs"><div class="tab active">Posture &amp; Vulnerabilities</div><div class="tab">Runtime (ADR)</div></div>
+  <div class="toolbar"><div class="filter-pill on">Status: Active ✕</div><div class="filter-pill">Type ▾</div><div class="filter-pill">Created by ▾</div><div class="grow"></div></div>
+  <div id="t"></div>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  const data=[
+    ["Non-root containers","Control C-0013",42,"legacy app cannot run non-root","shauli@armosec.io","in 24 days","Active"],
+    ["CVE-2023-44487","Vulnerability",21,"not reachable at runtime","dana@armosec.io","in 5 days","Active"],
+    ["Resource limits","Control C-0009",88,"batch jobs need burst","ops@armosec.io","in 90 days","Active"],
+    ["Reverse shell detected","Runtime ADR",2,"red-team exercise","shauli@armosec.io","expired","Expired"],
+  ];
+  const stc={"Active":"#049d54","Expired":"#A2A2A7"};
+  document.getElementById("t").innerHTML = table([{t:"Rule"},{t:"Type"},{t:"Resources",cls:"num"},{t:"Reason"},{t:"Created by"},{t:"Expires"},{t:"Status"}],
+    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td><span class="tag">${d[1]}</span></td><td class="num">${d[2]}</td><td class="muted">${d[3]}</td><td class="muted">${d[4]}</td><td class="muted">${d[5]}</td><td><span class="status-dot" style="background:${stc[d[6]]}"></span>${d[6]}</td></tr>`).join(""));
+</script></body></html>

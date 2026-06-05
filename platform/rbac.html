@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · RBAC Insights</title><link rel="stylesheet" href="assets/app.css"></head>
+<body data-page="rbac" data-title="RBAC Insights">
+  <div class="page-head"><div><h1>RBAC Insights</h1><div class="sub">Identities, roles and risky permission grants across your clusters</div></div></div>
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="card kpi"><div class="kpi-label">Subjects</div><div class="kpi-num">241</div></div>
+    <div class="card kpi"><div class="kpi-label">cluster-admin bindings</div><div class="kpi-num" style="color:var(--sev-crit)">7</div></div>
+    <div class="card kpi"><div class="kpi-label">Can read secrets</div><div class="kpi-num" style="color:var(--sev-high)">38</div></div>
+    <div class="card kpi"><div class="kpi-label">Unused permissions</div><div class="kpi-num">62%</div></div>
+  </div>
+  <div class="toolbar"><div class="filter-pill on">Risk: High+ ✕</div><div class="filter-pill">Kind ▾</div><div class="filter-pill">Cluster ▾</div><div class="grow"></div></div>
+  <div id="t"></div>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
+<script>
+  const data=[["default","ServiceAccount","payments","Critical","cluster-admin","Can do anything cluster-wide"],["ci-deployer","ServiceAccount","ci","High","edit (all ns)","Can read all secrets"],["dev-team","Group","—","High","custom: secrets-reader","Reads secrets in 12 ns"],["grafana","ServiceAccount","monitoring","Medium","view","Excessive list/watch"],["jenkins","ServiceAccount","ci","High","create pods/exec","Can exec into pods"]];
+  document.getElementById("t").innerHTML = table([{t:"Subject"},{t:"Kind"},{t:"Namespace"},{t:"Risk"},{t:"Effective role"},{t:"Why it's risky"}],
+    data.map(d=>`<tr onclick="closeDrawer()"><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td>${sev(d[3])}</td><td class="mono">${d[4]}</td><td class="muted">${d[5]}</td></tr>`).join(""));
+</script></body></html>
