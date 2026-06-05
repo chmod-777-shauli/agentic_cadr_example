@@ -121,6 +121,22 @@
   .sevlegend .it { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--txt-dim); font-weight: 600; }
   .sevlegend .it i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
 
+  /* hero: active threats */
+  .hero { border-color: rgba(220,38,38,.30); background: linear-gradient(180deg, var(--crit-bg), var(--bg-elev) 60%); }
+  .hero.calm { border-color: rgba(13,148,136,.30); background: linear-gradient(180deg, rgba(13,148,136,.10), var(--bg-elev) 60%); }
+  .hero-main { display: flex; align-items: center; gap: 16px; }
+  .hero-num { font-size: 56px; font-weight: 800; line-height: .9; letter-spacing: -2px; color: var(--crit); }
+  .hero.calm .hero-num { color: var(--accent); }
+  .hero-lbl { flex: 1; }
+  .hero-lbl .hl-t { font-size: 18px; font-weight: 800; }
+  .hero-lbl .hl-s { font-size: 13px; color: var(--txt-dim); margin-top: 3px; }
+  .hero-icon { font-size: 18px; }
+  .hero-divider { height: 1px; background: var(--line-soft); margin: 16px 0 13px; }
+  .rest-total { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--txt-faint); margin-bottom: 9px; }
+  .rest-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .rest-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: var(--txt-dim); background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 999px; padding: 5px 11px; }
+  .rest-chip i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+
   /* needs attention */
   .attn { display: flex; align-items: center; gap: 14px; }
   .attn .big { font-size: 34px; font-weight: 800; color: var(--crit); line-height: 1; }
@@ -639,6 +655,11 @@ function renderOverview(){
   const clsSegs = CLASS_ORDER.filter(c=>cls[c]>0).map(c=>`<span style="flex:${cls[c]};background:${CLASS_COLOR[c]}"></span>`).join("");
   const clsLegend = CLASS_ORDER.filter(c=>cls[c]>0).map(c=>`<div class="it"><i style="background:${CLASS_COLOR[c]}"></i>${cls[c]} ${CLASS_LEGEND[c]}</div>`).join("");
 
+  // HERO: active threats are the focus; everything else is secondary
+  const activeCount = cls.ActiveThreat || 0;
+  const restChips = CLASS_ORDER.filter(c => c!=="ActiveThreat" && cls[c]>0)
+    .map(c=>`<span class="rest-chip"><i style="background:${CLASS_COLOR[c]}"></i>${cls[c]} ${CLASS_LEGEND[c]}</span>`).join("");
+
   // SECONDARY breakdown: by severity
   const counts = {}; SEV_ORDER.forEach(s=>counts[s]=0);
   open.forEach(i=>counts[i.severity]++);
@@ -663,27 +684,25 @@ function renderOverview(){
       <span class="ref" onclick="pullRefresh()">↻ Refresh</span>
     </div>
 
-    <div class="card tap" onclick="goTab('incidents')">
-      <div class="headline"><span class="num">${total}</span><span class="lbl">open incidents</span></div>
-      <div class="sevbar">${clsSegs}</div>
-      <div class="sevlegend">${clsLegend}</div>
+    <div class="card hero ${activeCount>0?'':'calm'} tap" onclick="applyQuick('active')">
+      <div class="hero-main">
+        <span class="hero-num">${activeCount}</span>
+        <div class="hero-lbl">
+          <div class="hl-t">Active threat${activeCount===1?'':'s'}</div>
+          <div class="hl-s">${activeCount>0?'Need immediate attention':'None right now — all clear'}</div>
+        </div>
+        <span class="hero-icon">${activeCount>0?'⚠️':'✓'}</span>
+        <span class="chev">›</span>
+      </div>
+      <div class="hero-divider"></div>
+      <div class="rest-total">${total} open incident${total===1?'':'s'} total</div>
+      <div class="rest-chips">${restChips || '<span class="rest-chip">no other open incidents</span>'}</div>
     </div>
 
     <div class="card tap" onclick="goTab('incidents')">
       <div class="card-head" style="margin-bottom:10px"><h3>By severity</h3><span class="chev">›</span></div>
       <div class="sevbar" style="margin:0 0 12px">${segs}</div>
       <div class="sevlegend">${legend}</div>
-    </div>
-
-    <div class="card tap" onclick="applyQuick('active')">
-      <div class="attn">
-        <div class="big">${attn.length}</div>
-        <div class="meta">
-          <div class="t">Need attention</div>
-          <div class="s">Active threats &amp; review-required, still open</div>
-        </div>
-        <div class="card-head"><span class="chev">›</span></div>
-      </div>
     </div>
 
     <div class="card">
