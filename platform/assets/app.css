@@ -158,8 +158,50 @@ a:hover { text-decoration: underline; }
 .ac-node .nd { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-accent); }
 .ac-node.danger .nd { background: var(--sev-high); }
 .spotlight-toggle { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 600; color: var(--txt-dim); }
-.switch { width: 36px; height: 20px; border-radius: 999px; background: var(--brand); position: relative; }
+.switch { width: 36px; height: 20px; border-radius: 999px; background: var(--brand); position: relative; display:inline-block; }
 .switch::after { content:""; position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#fff; }
+.switch.off { background: #c7cedb; } .switch.off::after { right:auto; left:2px; }
+
+/* table cells: checkbox + toggle + mini donut */
+.cb { width:16px; height:16px; border:1.5px solid #c2cad8; border-radius:4px; display:inline-block; vertical-align:middle; }
+.cb.on { background:var(--brand); border-color:var(--brand); position:relative; }
+.cb.on::after { content:"✓"; color:#fff; font-size:11px; position:absolute; top:-2px; left:2px; font-weight:800; }
+.tbl td.col-cb, .tbl th.col-cb { width:34px; }
+.donut-mini { width:34px; height:34px; border-radius:50%; display:inline-grid; place-items:center; }
+.donut-mini > i { width:22px; height:22px; border-radius:50%; background:#fff; }
+.syscell { display:flex; align-items:center; gap:10px; }
+.syscell .lg { font-size:12px; color:var(--txt-dim); }
+
+/* "Total ..." severity selector widget (registry/repo/compliance) */
+.sev-tiles { display:flex; gap:10px; flex-wrap:wrap; }
+.sev-tile { display:flex; flex-direction:column; gap:2px; padding:8px 14px; border:1px solid var(--line); border-radius:9px; cursor:pointer; min-width:78px; }
+.sev-tile:hover { border-color:#cbd5e8; }
+.sev-tile .v { font-size:20px; font-weight:800; }
+.sev-tile .l { font-size:11px; font-weight:700; color:var(--txt-faint); text-transform:uppercase; letter-spacing:.4px; }
+
+/* RBAC graph controls + legend */
+.rbac-toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.rbac-check { display:inline-flex; align-items:center; gap:7px; font-size:13px; font-weight:600; color:var(--txt-dim); }
+.rbac-legend { display:flex; gap:16px; flex-wrap:wrap; margin-top:12px; font-size:12.5px; font-weight:600; color:var(--txt-dim); }
+.rbac-legend .it { display:flex; align-items:center; gap:7px; } .rbac-legend .it i { width:11px; height:11px; border-radius:3px; }
+.gnode { position:absolute; transform:translate(-50%,-50%); border-radius:8px; padding:5px 10px; font-size:11px; font-weight:700; color:#fff; white-space:nowrap; box-shadow:var(--shadow-sm); }
+
+/* settings: connect cards + sub-nav */
+.connect-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:24px; }
+@media (max-width:1100px){ .connect-grid{grid-template-columns:repeat(2,1fr);} }
+.connect-card { display:flex; align-items:center; gap:14px; border:1px solid var(--line); border-radius:10px; padding:16px 18px; background:var(--panel); cursor:pointer; }
+.connect-card:hover { border-color:#cbd5e8; }
+.connect-card .ci { width:38px; height:38px; border-radius:9px; background:#eef3ff; display:grid; place-items:center; font-weight:800; color:var(--brand-light); font-size:13px; }
+.connect-card .ct { font-weight:700; } .connect-card .cs { font-size:12px; color:var(--txt-faint); }
+.settings-wrap { display:grid; grid-template-columns:210px 1fr; gap:26px; }
+.subnav { border-right:1px solid var(--line); padding-right:12px; }
+.subnav .sub-cat { font-size:10.5px; text-transform:uppercase; letter-spacing:1px; color:#9aa3b2; font-weight:700; padding:10px 10px 4px; }
+.subnav .sub-item { display:block; padding:8px 12px; border-radius:7px; font-size:13px; font-weight:600; color:var(--txt-dim); cursor:pointer; }
+.subnav .sub-item:hover { background:var(--panel-2); color:var(--txt); text-decoration:none; }
+.subnav .sub-item.active { background:#e7e9f2; color:var(--brand); }
+.acct-tabs { display:flex; gap:18px; border-bottom:1px solid var(--line); margin:18px 0; }
+.acct-tab { padding:9px 2px; font-size:13.5px; font-weight:600; color:var(--txt-dim); border-bottom:2px solid transparent; margin-bottom:-1px; cursor:pointer; }
+.acct-tab.on { color:var(--brand-light); border-bottom-color:var(--brand-light); }
 
 /* ---------- page header ---------- */
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; margin-bottom: 16px; gap: 16px; flex-wrap: wrap; }

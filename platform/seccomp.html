@@ -2,38 +2,36 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Seccomp Profiles</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="seccomp" data-title="Seccomp Profiles">
-  <div class="page-head"><div><h1>Seccomp Profiles</h1><div class="sub">Generated seccomp profiles from observed syscalls — tighten the kernel attack surface</div></div>
-  <div class="page-actions"><button class="btn primary">Export profile</button></div></div>
-  <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Optimized</div><div class="kpi-num pass">61</div></div>
-    <div class="card kpi"><div class="kpi-label">Overly permissive</div><div class="kpi-num" style="color:var(--sev-high)">28</div></div>
-    <div class="card kpi"><div class="kpi-label">Missing</div><div class="kpi-num" style="color:var(--sev-med)">19</div></div>
-    <div class="card kpi"><div class="kpi-label">Syscalls reduced</div><div class="kpi-num">↓ 64%</div></div>
+  <div class="page-head"><div><h1>Seccomp Profiles</h1><div class="sub">Use a Seccomp profile to restrict a container's system calls, minimizing the kernel attack surface</div></div></div>
+  <div class="toolbar">
+    <div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div><div class="filter-pill">Workload ▾</div>
+    <div class="filter-pill">Kind ▾</div><div class="filter-pill">Label ▾</div><div class="filter-pill">Profile status ▾</div>
+    <div class="grow"></div><button class="btn sm">☆ Save filters</button>
   </div>
-  <div class="toolbar"><div class="filter-pill on">Status: Overly permissive ✕</div><div class="filter-pill">Cluster ▾</div><div class="grow"></div></div>
-  <div id="t"></div>
+  <div class="toolbar" style="margin-top:-2px">
+    <span class="count-note">Showing 4 of 108 Workloads</span>
+    <div class="grow"></div><button class="btn primary" disabled>Generate profile</button>
+  </div>
+  <div id="t"></div><div class="paginator" id="pager"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const data=[["payments-api","payments","Overly permissive",312,118],["auth-service","auth","Optimized",96,96],["edge-proxy","prod","Overly permissive",289,131],["batch-worker","data","Missing",0,0]];
-  const c={"Optimized":"#049d54","Overly permissive":"#e11900","Missing":"#fb9000"};
-  document.getElementById("t").innerHTML = table([{t:"Workload"},{t:"Namespace"},{t:"Status"},{t:"Syscalls allowed",cls:"num"},{t:"Syscalls used",cls:"num"}],
-    data.map(d=>`<tr data-namespace="${d[1]}" onclick='openSec(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td><span class="status-dot" style="background:${c[d[2]]}"></span>${d[2]}</td><td class="num">${d[3]}</td><td class="num">${d[4]}</td></tr>`).join(""));
-
-  function openSec(d){
-    const removable = d[3]-d[4];
-    openDrawer(`<div class="drawer-head"><div><span class="status-dot" style="background:${c[d[2]]}"></span>${d[2]}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[4]} of ${d[3]} allowed syscalls actually used</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
-      <div class="drawer-body">
-        <div class="banner info" style="margin-bottom:14px">Tightening this profile removes <b style="margin:0 4px">${removable}</b> unused syscalls (↓${Math.round(removable/(d[3]||1)*100)}%).</div>
-        <div class="section-label">Dangerous syscalls still allowed but unused</div>
-        <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr><td class="mono">ptrace</td><td class="muted">debugging / injection</td><td class="fail">unused</td></tr>
-          <tr><td class="mono">mount</td><td class="muted">filesystem escape</td><td class="fail">unused</td></tr>
-          <tr><td class="mono">setns</td><td class="muted">namespace switch</td><td class="fail">unused</td></tr>
-          <tr><td class="mono">bpf</td><td class="muted">kernel programs</td><td class="fail">unused</td></tr>
-        </tbody></table></div>
-        <div class="section-label">Workload</div>
-        <div class="xref" onclick='openWorkload("${d[0]}")'><div><div class="xref-t">${d[0]}</div><div class="xref-s">${d[1]}</div></div><span class="arrow">›</span></div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Optimized profile applied to ${d[0]}')">Apply optimized profile</button><button class="btn" onclick="toast('Profile downloaded')">Download</button></div>
-      </div>`);
-  }
+  const SP = [
+    {w:"payments-api",k:"Deployment",ns:"payments",c:"prod-eu-1",st:"Overly permissive",allowed:312,used:118},
+    {w:"auth-service",k:"Deployment",ns:"auth",c:"prod-us-1",st:"Optimized",allowed:96,used:96},
+    {w:"edge-proxy",k:"DaemonSet",ns:"prod",c:"prod-us-1",st:"Overly permissive",allowed:289,used:131},
+    {w:"batch-worker",k:"Deployment",ns:"data",c:"staging-eu-1",st:"Missing",allowed:0,used:0},
+  ];
+  const ST={"Optimized":"#049d54","Overly permissive":"#e11900","Missing":"#fb9000"};
+  function donutMini(used,allowed){ const pct=allowed?used/allowed*100:0; return `<div class="donut-mini" style="background:conic-gradient(#053CA1 ${pct*3.6}deg,#e6e9f0 0)"><i></i></div>`; }
+  const rows = SP.map(r=>`
+    <tr data-cluster="${r.c}" data-namespace="${r.ns}" class="clickable-row" onclick='openWorkload("${r.w}")'>
+      <td class="col-cb"><span class="cb"></span></td>
+      <td class="strong">${r.w}</td><td>${r.k}</td><td class="muted">${r.ns}</td><td class="muted">${r.c}</td>
+      <td><span class="status-dot" style="background:${ST[r.st]}"></span>${r.st}</td>
+      <td><div class="syscell">${donutMini(r.used,r.allowed)}<span class="lg">${r.used} used / ${r.allowed} allowed</span></div></td>
+      <td class="col-end"><span class="chevbtn">⚙</span></td>
+    </tr>`).join("");
+  document.getElementById("t").innerHTML = table(
+    [{t:"",cls:"col-cb"},{t:"Workload"},{t:"Kind"},{t:"Namespace"},{t:"Cluster"},{t:"Profile status"},{t:"Syscalls"},{t:"",cls:"col-end"}], rows);
+  document.getElementById("pager").innerHTML = `<span>Workloads 1–4 of 108</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 </script></body></html>

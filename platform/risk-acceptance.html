@@ -2,42 +2,37 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Risk Acceptance</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="risk-acceptance" data-title="Risk Acceptance">
-  <div class="page-head"><div><h1>Risk Acceptance</h1><div class="sub">Accepted risks &amp; exceptions, grouped by rule, with scope and expiration</div></div>
-  <div class="page-actions"><button class="btn primary">New exception</button></div></div>
-  <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Active exceptions</div><div class="kpi-num">34</div></div>
-    <div class="card kpi"><div class="kpi-label">Expiring &lt; 30d</div><div class="kpi-num" style="color:var(--sev-med)">6</div></div>
-    <div class="card kpi"><div class="kpi-label">Expired</div><div class="kpi-num muted">3</div></div>
-    <div class="card kpi"><div class="kpi-label">Resources suppressed</div><div class="kpi-num">412</div></div>
+  <div class="page-head"><div><h1>Risk Acceptance</h1></div><div class="page-actions"><button class="btn primary">+ Accept risk</button></div></div>
+  <div class="banner info" style="margin-bottom:18px">This page consolidates all accepted risks and lets you review and manage them.</div>
+
+  <div class="toggle-group" id="tabs" style="margin-bottom:18px">
+    <div class="tg on" data-v="sr">Security Risks</div>
+    <div class="tg" data-v="vuln">Vulnerabilities</div>
+    <div class="tg" data-v="comp">Compliance</div>
+    <div class="tg" data-v="rt">Runtime Incidents</div>
   </div>
-  <div class="tabs"><div class="tab active">Posture &amp; Vulnerabilities</div><div class="tab">Runtime (ADR)</div></div>
-  <div class="toolbar"><div class="filter-pill on">Status: Active ✕</div><div class="filter-pill">Type ▾</div><div class="filter-pill">Created by ▾</div><div class="grow"></div></div>
-  <div id="t"></div>
+
+  <div class="toolbar">
+    <div class="filter-pill">Risk name ▾</div><div class="filter-pill">Category ▾</div><div class="filter-pill">Severity ▾</div>
+    <div class="filter-pill">Expiration date ▾</div><div class="filter-pill">Accepted by ▾</div>
+    <div class="grow"></div><button class="btn sm">☆ Save filters</button>
+  </div>
+  <div id="t"></div><div class="paginator" id="pager"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const data=[
-    ["Non-root containers","Control C-0013",42,"legacy app cannot run non-root","shauli@armosec.io","in 24 days","Active"],
-    ["CVE-2023-44487","Vulnerability",21,"not reachable at runtime","dana@armosec.io","in 5 days","Active"],
-    ["Resource limits","Control C-0009",88,"batch jobs need burst","ops@armosec.io","in 90 days","Active"],
-    ["Reverse shell detected","Runtime ADR",2,"red-team exercise","shauli@armosec.io","expired","Expired"],
+  const X=[
+    {scope:"cluster: prod-eu-1 · ns: payments",cat:"Configuration scanning",by:"shauli@armosec.io",accepted:"May 12, 2026",expires:"Jun 29, 2026",reason:"Legacy app cannot run non-root"},
+    {scope:"cluster: prod-us-1",cat:"Vulnerabilities",by:"dana@armosec.io",accepted:"Jun 1, 2026",expires:"Jun 10, 2026",reason:"Not reachable at runtime"},
+    {scope:"All clusters",cat:"Configuration scanning",by:"ops@armosec.io",accepted:"Apr 3, 2026",expires:"NEVER",reason:"Batch jobs need burst capacity"},
+    {scope:"cluster: prod-eu-1 · ns: data",cat:"RBAC",by:"shauli@armosec.io",accepted:"May 28, 2026",expires:"Aug 26, 2026",reason:"Service mesh requires elevated SA"},
   ];
-  const stc={"Active":"#049d54","Expired":"#A2A2A7"};
-  document.getElementById("t").innerHTML = table([{t:"Rule"},{t:"Type"},{t:"Resources",cls:"num"},{t:"Reason"},{t:"Created by"},{t:"Expires"},{t:"Status"}],
-    data.map(d=>`<tr onclick='openExc(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td><span class="tag">${d[1]}</span></td><td class="num">${d[2]}</td><td class="muted">${d[3]}</td><td class="muted">${d[4]}</td><td class="muted">${d[5]}</td><td><span class="status-dot" style="background:${stc[d[6]]}"></span>${d[6]}</td></tr>`).join(""));
-
-  function openExc(d){
-    openDrawer(`<div class="drawer-head"><div><span class="status-dot" style="background:${stc[d[6]]}"></span>${d[6]}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[2]} resources suppressed</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
-      <div class="drawer-body">
-        <div class="section-label">Exception details</div>
-        <div class="kv"><div class="k">Reason</div><div class="v">${d[3]}</div><div class="k">Created by</div><div class="v">${d[4]}</div><div class="k">Expires</div><div class="v">${d[5]}</div><div class="k">Status</div><div class="v">${d[6]}</div></div>
-        <div class="section-label">Scope</div>
-        <div class="kv"><div class="k">Clusters</div><div class="v">prod-eu-1, prod-us-1</div><div class="k">Namespaces</div><div class="v">payments, auth</div><div class="k">Kind</div><div class="v">Deployment</div></div>
-        <div class="section-label">Suppressed resources (${d[2]})</div>
-        <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr onclick='openWorkload("payments-api")'><td class="elink">payments-api</td><td class="muted">payments · prod-eu-1</td></tr>
-          <tr onclick='openWorkload("auth-service")'><td class="elink">auth-service</td><td class="muted">auth · prod-us-1</td></tr>
-        </tbody></table></div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Exception extended 90 days')">Extend</button><button class="btn" onclick="toast('Exception revoked')">Revoke</button></div>
-      </div>`);
-  }
+  const rows=X.map(x=>`<tr class="clickable-row" onclick="toast('Edit exception')">
+    <td class="strong">${x.scope}</td><td>${x.cat}</td>
+    <td class="muted">${x.by}</td><td class="muted">${x.accepted}</td>
+    <td class="muted">${x.expires==="NEVER"?'<span class="tag">NEVER</span>':x.expires}</td>
+    <td class="muted">${x.reason}</td>
+    <td class="col-end"><span class="chevbtn">✎</span></td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"Scope"},{t:"Category"},{t:"Accepted by"},{t:"Acceptance date"},{t:"Expiration date"},{t:"Reason"},{t:"",cls:"col-end"}], rows);
+  document.getElementById("pager").innerHTML = `<span>Accepted risks 1–4 of 34</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
+  document.querySelectorAll("#tabs .tg").forEach(t=>t.onclick=()=>{document.querySelectorAll("#tabs .tg").forEach(x=>x.classList.remove("on"));t.classList.add("on");toast("Tab: "+t.textContent);});
 </script></body></html>

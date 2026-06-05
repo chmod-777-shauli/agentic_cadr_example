@@ -2,26 +2,57 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Settings</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="settings" data-title="Settings">
-  <div class="page-head"><div><h1>Settings</h1><div class="sub">Accounts, access, integrations and billing</div></div></div>
+  <div class="settings-wrap">
+    <aside class="subnav">
+      <div class="sub-cat">Workspace</div>
+      <a class="sub-item active">Accounts</a>
+      <a class="sub-item">Code Repositories</a>
+      <a class="sub-item">Frameworks</a>
+      <a class="sub-item">Controls</a>
+      <a class="sub-item">Integrations</a>
+      <a class="sub-item">Email Preferences</a>
+      <a class="sub-item">Agent Access Keys</a>
+      <div class="sub-cat">Billing</div>
+      <a class="sub-item">Plans</a>
+      <a class="sub-item">Invoices</a>
+      <a class="sub-item">Current Plan</a>
+    </aside>
 
-  <div class="section-label" style="margin-top:0">Workspace</div>
-  <div class="grid cols-3" id="g1"></div>
-  <div class="section-label">Integrations</div>
-  <div class="grid cols-4" id="g2"></div>
+    <div>
+      <div class="page-head"><div><h1>Accounts</h1><div class="sub">Connect clusters, hosts and cloud accounts</div></div></div>
 
+      <div class="connect-grid" id="connect"></div>
+
+      <div class="acct-tabs" id="tabs">
+        <div class="acct-tab on">Kubernetes <span class="muted">4</span></div>
+        <div class="acct-tab">AWS <span class="muted">2</span></div>
+        <div class="acct-tab">Azure <span class="muted">1</span></div>
+        <div class="acct-tab">GCP <span class="muted">1</span></div>
+        <div class="acct-tab">Hosts <span class="muted">48</span></div>
+        <div class="acct-tab">ECS <span class="muted">2</span></div>
+      </div>
+
+      <div id="t"></div>
+    </div>
+  </div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  function card(t,s){ return `<div class="card" style="cursor:pointer" onclick="closeDrawer()"><div style="font-weight:700;font-size:14px;margin-bottom:4px">${t}</div><div class="muted">${s}</div></div>`; }
-  document.getElementById("g1").innerHTML = [
-    card("Cloud Accounts","3 connected · AWS, GCP"),
-    card("Kubernetes Accounts","4 clusters connected"),
-    card("Agent Access Keys","6 keys · 1 default"),
-    card("Teams","12 members · 3 roles"),
-    card("Frameworks & Controls","Custom controls, framework config"),
-    card("Billing","Enterprise plan · renews Aug 2026"),
-  ].join("");
-  document.getElementById("g2").innerHTML = [
-    card("Jira","Issue creation"),card("Slack","Notifications"),card("Linear","Issue creation"),card("GitHub Issues","Notifications"),
-    card("Microsoft Sentinel","SIEM export"),card("Splunk","SIEM export"),card("Sumo Logic","SIEM export"),card("Webhook","Custom export"),
-  ].join("");
+  const CONNECT=[["K8","Kubernetes","Connect K8s cluster"],["ECS","Amazon ECS","Connect ECS cluster"],["HO","Hosts","Connect hosts"],["AWS","Amazon Web Services","Connect accounts"],["AZ","Microsoft Azure","Connect subscriptions"],["GCP","Google Cloud Platform","Connect projects"]];
+  document.getElementById("connect").innerHTML = CONNECT.map(c=>`<div class="connect-card" onclick="toast('Connect ${c[1]}')"><div class="ci">${c[0]}</div><div><div class="ct">${c[1]}</div><div class="cs">${c[2]}</div></div></div>`).join("");
+
+  const K=[
+    {prov:"EKS",short:"prod-eu-1",full:"arn:aws:eks:eu-central-1:...",status:"Connected",helm:"1.19.2",nodes:12,vcpu:96},
+    {prov:"EKS",short:"prod-us-1",full:"arn:aws:eks:us-east-1:...",status:"Connected",helm:"1.19.2",nodes:9,vcpu:72},
+    {prov:"GKE",short:"staging-eu-1",full:"gke_armo_europe-west1_staging",status:"Connected",helm:"1.18.9 ↑",nodes:4,vcpu:16},
+    {prov:"AKS",short:"dev-1",full:"aks-armo-dev",status:"Scanning",helm:"1.19.2",nodes:3,vcpu:12},
+  ];
+  const STC={"Connected":"#049d54","Scanning":"#0090ff","Disconnected":"#A2A2A7"};
+  const totNodes=K.reduce((a,k)=>a+k.nodes,0), totVcpu=K.reduce((a,k)=>a+k.vcpu,0);
+  const rows=K.map(k=>`<tr class="clickable-row" onclick="toast('Cluster overview')">
+    <td><span class="tag">${k.prov}</span></td>
+    <td class="strong">${k.short}<div class="cellsub mono">${k.full}</div></td>
+    <td><span class="status-dot" style="background:${STC[k.status]}"></span>${k.status}</td>
+    <td class="mono">${k.helm}</td><td class="num">${k.nodes}</td><td class="num">${k.vcpu}</td>
+    <td class="col-end"><span class="chevbtn">⋯</span></td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"Provider"},{t:"Cluster name"},{t:"Status"},{t:"Helm"},{t:"Nodes ("+totNodes+")",cls:"num"},{t:"vCPUs ("+totVcpu+")",cls:"num"},{t:"",cls:"col-end"}], rows);
 </script></body></html>

@@ -2,34 +2,44 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · RBAC Insights</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="rbac" data-title="RBAC Insights">
-  <div class="page-head"><div><h1>RBAC Insights</h1><div class="sub">Identities, roles and risky permission grants across your clusters</div></div></div>
-  <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Subjects</div><div class="kpi-num">241</div></div>
-    <div class="card kpi"><div class="kpi-label">cluster-admin bindings</div><div class="kpi-num" style="color:var(--sev-crit)">7</div></div>
-    <div class="card kpi"><div class="kpi-label">Can read secrets</div><div class="kpi-num" style="color:var(--sev-high)">38</div></div>
-    <div class="card kpi"><div class="kpi-label">Unused permissions</div><div class="kpi-num">62%</div></div>
+  <div class="page-head"><div><h1>RBAC Insights</h1><div class="sub">Visualize and query Kubernetes RBAC — subjects, roles and the resources they can reach</div></div>
+  <div class="page-actions"><button class="btn">Clear</button></div></div>
+
+  <div class="rbac-toolbar">
+    <div class="filter-pill">Cluster: prod-eu-1 ▾</div>
+    <div class="filter-pill">Query: Show subjects with high privileges ▾</div>
+    <div class="filter-pill">Investigate ▾</div>
+    <div class="filter-pill">Who-can ▾</div>
+    <div class="grow"></div>
+    <label class="rbac-check"><span class="cb on"></span> Group by verbs</label>
+    <label class="rbac-check"><span class="cb"></span> Layout by type</label>
   </div>
-  <div class="toolbar"><div class="filter-pill on">Risk: High+ ✕</div><div class="filter-pill">Kind ▾</div><div class="filter-pill">Cluster ▾</div><div class="grow"></div></div>
-  <div id="t"></div>
+
+  <div class="card pad0">
+    <div class="graph-canvas" id="graph" style="height:440px;border:0;border-radius:10px"></div>
+  </div>
+  <div class="rbac-legend">
+    <div class="it"><i style="background:#053CA1"></i>User</div>
+    <div class="it"><i style="background:#2f6df6"></i>Group</div>
+    <div class="it"><i style="background:#0090ff"></i>Service Account</div>
+    <div class="it"><i style="background:#fb9000"></i>Role</div>
+    <div class="it"><i style="background:#e11900"></i>Cluster Role</div>
+    <div class="it"><i style="background:#6b0047"></i>Resource</div>
+    <div class="it"><i style="background:#049d54"></i>Workload</div>
+  </div>
+  <div class="note">Graph is a visual approximation of the real Cytoscape RBAC visualizer.</div>
+
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const data=[["default","ServiceAccount","payments","Critical","cluster-admin","Can do anything cluster-wide"],["ci-deployer","ServiceAccount","ci","High","edit (all ns)","Can read all secrets"],["dev-team","Group","—","High","custom: secrets-reader","Reads secrets in 12 ns"],["grafana","ServiceAccount","monitoring","Medium","view","Excessive list/watch"],["jenkins","ServiceAccount","ci","High","create pods/exec","Can exec into pods"]];
-  document.getElementById("t").innerHTML = table([{t:"Subject"},{t:"Kind"},{t:"Namespace"},{t:"Risk"},{t:"Effective role"},{t:"Why it's risky"}],
-    data.map(d=>`<tr onclick='openSubject(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong">${d[0]}</td><td class="muted">${d[1]}</td><td class="muted">${d[2]}</td><td>${sev(d[3])}</td><td class="mono">${d[4]}</td><td class="muted">${d[5]}</td></tr>`).join(""));
-
-  function openSubject(d){
-    openDrawer(`<div class="drawer-head"><div>${sev(d[3])}<h2>${d[0]}</h2><div class="muted" style="margin-top:6px">${d[1]} · ${d[2]||'cluster-wide'}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
-      <div class="drawer-body">
-        <div class="banner info" style="margin-bottom:14px">${d[5]}</div>
-        <div class="section-label">Effective permissions</div>
-        <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Resource</th><th>Verbs</th><th>Used?</th></tr></thead><tbody>
-          <tr><td class="mono">secrets</td><td class="mono">get, list, watch</td><td class="fail">unused 30d</td></tr>
-          <tr><td class="mono">pods/exec</td><td class="mono">create</td><td class="pass">used</td></tr>
-          <tr><td class="mono">deployments</td><td class="mono">*</td><td class="fail">unused 30d</td></tr>
-        </tbody></table></div>
-        <div class="section-label">Bound via</div>
-        <div class="kv"><div class="k">RoleBinding</div><div class="v mono">${d[0]}-binding</div><div class="k">Role</div><div class="v mono">${d[4]}</div></div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Least-privilege role suggested')">Suggest least-privilege</button><button class="btn" onclick="toast('Exported')">Export</button></div>
-      </div>`);
-  }
+  const N=[
+    {x:14,y:30,l:"system:masters",c:"#2f6df6"},{x:14,y:62,l:"ci-deployer (SA)",c:"#0090ff"},
+    {x:42,y:22,l:"cluster-admin",c:"#e11900"},{x:42,y:50,l:"edit",c:"#fb9000"},{x:42,y:80,l:"secrets-reader",c:"#fb9000"},
+    {x:72,y:20,l:"secrets",c:"#6b0047"},{x:72,y:44,l:"pods/exec",c:"#6b0047"},{x:72,y:66,l:"deployments",c:"#6b0047"},{x:88,y:84,l:"payments-api",c:"#049d54"},
+  ];
+  const E=[[0,2],[1,3],[1,4],[2,5],[2,6],[2,7],[3,7],[4,5],[7,8]];
+  const g=document.getElementById("graph"); const W=g.clientWidth||1000,H=440;
+  let svg=`<svg width="100%" height="100%" style="position:absolute;inset:0">`;
+  E.forEach(([a,b])=>{svg+=`<line x1="${N[a].x/100*W}" y1="${N[a].y/100*H}" x2="${N[b].x/100*W}" y2="${N[b].y/100*H}" stroke="#c3cbe0" stroke-width="1.5"/>`;});
+  svg+=`</svg>`;
+  g.innerHTML = svg + N.map(n=>`<div class="gnode" style="left:${n.x}%;top:${n.y}%;background:${n.c}">${n.l}</div>`).join("");
 </script></body></html>

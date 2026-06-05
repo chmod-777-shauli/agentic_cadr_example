@@ -2,33 +2,38 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Registry Scanning</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="registry-scanning" data-title="Registry Scanning">
-  <div class="page-head"><div><h1>Registry Scanning</h1><div class="sub">Continuous vulnerability scanning of connected container registries</div></div>
-  <div class="page-actions"><button class="btn primary">Connect registry</button></div></div>
-  <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Registries</div><div class="kpi-num">5</div></div>
-    <div class="card kpi"><div class="kpi-label">Images</div><div class="kpi-num">1,284</div></div>
-    <div class="card kpi"><div class="kpi-label">Critical images</div><div class="kpi-num" style="color:var(--sev-crit)">41</div></div>
-    <div class="card kpi"><div class="kpi-label">Scan coverage</div><div class="kpi-num pass">99%</div></div>
+  <div class="page-head"><div><h1>Registry Scanning</h1></div><div class="page-actions"><button class="btn">Connect registry</button><button class="btn primary">⤓ Export</button></div></div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="widget-title">Total vulnerabilities</div>
+    <div class="sev-tiles" id="totals"></div>
   </div>
-  <div class="toolbar"><div class="filter-pill">Type ▾</div><div class="grow"></div></div>
-  <div id="t"></div>
+
+  <div class="toolbar">
+    <div class="filter-pill">Status ▾</div><div class="filter-pill">Scan time ▾</div><div class="filter-pill">Registry ▾</div>
+    <div class="filter-pill">Repository ▾</div><div class="filter-pill">Image tag ▾</div>
+    <div class="grow"></div>
+    <div class="hotcve-toggle"><span class="switch off"></span> Fixable</div>
+    <div class="hotcve-toggle"><span class="switch off"></span> RCE</div>
+  </div>
+  <div id="t"></div><div class="paginator" id="pager"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const data=[["docker.io/armo","Docker Hub",312,{Critical:14,High:62,Medium:120},"connected"],["ghcr.io/armo","GitHub","189",{Critical:6,High:31,Medium:74},"connected"],["123.dkr.ecr.eu-central-1","Amazon ECR",604,{Critical:18,High:88,Medium:201},"connected"],["harbor.internal","Harbor",179,{Critical:3,High:19,Medium:44},"connected"]];
-  document.getElementById("t").innerHTML = table([{t:"Registry"},{t:"Type"},{t:"Images",cls:"num"},{t:"Vulnerabilities"},{t:"Status"}],
-    data.map(d=>`<tr onclick='openReg(${JSON.stringify(d).replace(/'/g,"&#39;")})'><td class="strong mono">${d[0]}</td><td class="muted">${d[1]}</td><td class="num">${d[2]}</td><td style="width:200px">${sevbar(d[3])}<div class="cellsub" style="margin-top:5px">${sevCounts(d[3])}</div></td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>Connected</span></td></tr>`).join(""));
-
-  function openReg(d){
-    openDrawer(`<div class="drawer-head"><div><span class="tag">${d[1]}</span><h2 class="mono">${d[0]}</h2><div class="muted" style="margin-top:6px">${d[2]} images scanned</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
-      <div class="drawer-body">
-        <div class="section-label">Vulnerabilities</div>${sevbar(d[3])}<div class="cellsub" style="margin-top:6px">${sevCounts(d[3])}</div>
-        <div class="section-label">Most vulnerable images</div>
-        <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr onclick="go('vulnerabilities.html')"><td class="elink mono">payments-api:1.8.2</td><td>${sev("Critical")}</td><td class="num">31</td></tr>
-          <tr onclick="go('vulnerabilities.html')"><td class="elink mono">nginx:1.25.1</td><td>${sev("High")}</td><td class="num">26</td></tr>
-          <tr onclick="go('vulnerabilities.html')"><td class="elink mono">auth-service:4.4</td><td>${sev("High")}</td><td class="num">16</td></tr>
-        </tbody></table></div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Re-scan queued for ${d[0]}')">Re-scan registry</button><button class="btn" onclick="toast('Settings opened')">Configure</button></div>
-      </div>`);
-  }
+  const tot={Critical:41,High:312,Medium:596,Low:387,Negligible:120};
+  const extra=`<div class="sev-tile"><span class="v pass">812</span><span class="l">Fixed</span></div><div class="sev-tile"><span class="v" style="color:var(--sev-crit)">9</span><span class="l">RCE</span></div>`;
+  document.getElementById("totals").innerHTML = SEV.filter(s=>tot[s]!=null).map(s=>`<div class="sev-tile"><span class="v" style="color:${SEV_COLOR[s]}">${tot[s]}</span><span class="l">${s}</span></div>`).join("") + extra;
+  const R=[
+    {st:"Connected",scan:"Jun 5, 2026 08:14",reg:"docker.io/armo",repo:"payments-api",tag:"1.8.2",failed:{Critical:3,High:8,Medium:14,Low:6}},
+    {st:"Connected",scan:"Jun 5, 2026 06:40",reg:"docker.io/library",repo:"nginx",tag:"1.25.1",failed:{Critical:1,High:5,Medium:9,Low:11}},
+    {st:"Scanning",scan:"Jun 5, 2026 09:02",reg:"ghcr.io/armo",repo:"batch-worker",tag:"3.1",failed:{Critical:0,High:3,Medium:12,Low:8}},
+    {st:"Connected",scan:"Jun 4, 2026 23:55",reg:"123.dkr.ecr.eu-central-1",repo:"auth-service",tag:"4.4",failed:{Critical:2,High:4,Medium:7,Low:3}},
+  ];
+  const STC={"Connected":"#049d54","Scanning":"#0090ff","Failed":"#e11900"};
+  const rows=R.map(r=>`<tr class="clickable-row" onclick="go('vulnerabilities.html')">
+    <td><span class="status-dot" style="background:${STC[r.st]}"></span></td>
+    <td class="muted" style="white-space:nowrap">${r.scan}</td>
+    <td class="strong mono">${r.reg}</td><td>${r.repo}</td><td class="mono">${r.tag}</td>
+    <td style="min-width:210px">${sevbar(r.failed)}<div class="cellsub" style="margin-top:5px">${sevCounts(r.failed)}</div></td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"Stat."},{t:"Scan time"},{t:"Registry"},{t:"Repository"},{t:"Image tag"},{t:"Severity"}], rows);
+  document.getElementById("pager").innerHTML = `<span>Images 1–4 of 1,284</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 </script></body></html>

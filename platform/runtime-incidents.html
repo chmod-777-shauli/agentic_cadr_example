@@ -1,57 +1,64 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ARMO · Runtime Incidents</title>
-<link rel="stylesheet" href="assets/app.css">
-</head>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ARMO · Runtime Incidents</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="runtime-incidents" data-title="Runtime Incidents">
-
-  <div class="page-head">
-    <div><h1>Runtime Incidents</h1><div class="sub">Behavioral, malware, network &amp; cloud (CDR) detections with AI classification</div></div>
-    <div class="page-actions"><button class="btn">Response policies</button><button class="btn primary">Export</button></div>
+  <div class="page-head" style="align-items:center">
+    <div><h1>Runtime Incidents</h1><div class="sub">✓ 6 clusters · 3 cloud accounts monitored</div></div>
+    <div class="page-actions">
+      <div class="tb-search" style="width:280px">🔍<input placeholder="Search by Process, IP, File, …"></div>
+      <button class="btn">↻ Refresh</button>
+    </div>
   </div>
 
-  <div class="grid cols-4" style="margin-bottom:16px">
-    <div class="card"><div class="card-head" style="margin-bottom:8px"><h3>By classification</h3></div><div id="byClass"></div></div>
-    <div class="card kpi"><div class="kpi-label">Active threats</div><div class="kpi-num" style="color:var(--sev-high)">4</div><div class="kpi-delta up">Need attention</div></div>
-    <div class="card kpi"><div class="kpi-label">Open incidents</div><div class="kpi-num">11</div></div>
-    <div class="card"><div class="card-head" style="margin-bottom:8px"><h3>Trend (14d)</h3></div><div id="trend"></div></div>
+  <div class="widgets-row" style="grid-template-columns:1.1fr 1.3fr 1.1fr">
+    <div class="card"><div class="widget-title">Incident Classification</div><div id="wClass"></div></div>
+    <div class="card"><div class="widget-title">Top Threats</div><div id="wThreats"></div></div>
+    <div class="card"><div class="widget-title">Workload Learning Status</div><div id="wLearn"></div></div>
   </div>
 
   <div class="toolbar">
-    <div class="filter-pill on">Status: Open, Investigating ✕</div>
-    <div class="filter-pill">Severity ▾</div>
-    <div class="filter-pill">Classification ▾</div>
-    <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">MITRE ▾</div>
+    <span style="font-size:13px;font-weight:600;color:var(--txt-dim)">Group by</span>
+    <div class="toggle-group" style="padding:2px">
+      <div class="tg">Threat</div><div class="tg">Account</div><div class="tg">Host</div>
+      <div class="tg">Cluster</div><div class="tg">Namespace</div><div class="tg">Workload</div><div class="tg on">None</div>
+    </div>
     <div class="grow"></div>
-    <div class="tb-pill">Group by: None ▾</div>
-    <span class="count-note" id="cnt"></span>
+    <button class="btn sm" disabled>Change status (0)</button>
+  </div>
+  <div class="toolbar" style="margin-top:-2px">
+    <div class="filter-pill">Severity ▾</div><div class="filter-pill">Classification ▾</div><div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">Namespace ▾</div><div class="filter-pill">MITRE ▾</div><div class="filter-pill on">Status: Open, Investigating ✕</div>
+    <div class="grow"></div><span class="count-note" id="cnt"></span>
   </div>
 
-  <div id="incTable"></div>
+  <div id="t"></div><div class="paginator" id="pager"></div>
 
-<script src="assets/data.js"></script>
-<script src="assets/shell.js"></script>
+<script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
   const byc={}; INCIDENTS.forEach(i=>byc[i.classification]=(byc[i.classification]||0)+1);
-  document.getElementById("byClass").innerHTML = Object.entries(byc).map(([c,n])=>`<div style="display:flex;align-items:center;gap:8px;margin:5px 0"><b style="color:${CLASS_COLOR[c]};font-size:16px;width:18px">${n}</b>${clsf(c)}</div>`).join("");
-  document.getElementById("trend").innerHTML = spark([5,7,6,9,8,11,9,12,10,8,11,9,13,11], "#e11900", 50);
+  document.getElementById("wClass").innerHTML = Object.entries(byc).map(([c,n])=>`<div style="display:flex;align-items:center;gap:9px;margin:6px 0"><b style="color:${CLASS_COLOR[c]};font-size:16px;width:18px">${n}</b>${clsf(c)}</div>`).join("");
+  const tn={}; INCIDENTS.forEach(i=>tn[i.name]=(tn[i.name]||0)+1);
+  document.getElementById("wThreats").innerHTML = hbars(Object.entries(tn).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([nm,v])=>({nm,v})), "#e11900");
+  document.getElementById("wLearn").innerHTML = `<div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:#049d54"></span>Completed<span class="n">248</span></div><div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:#0090ff"></span>Learning<span class="n">51</span></div><div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:#A2A2A7"></span>Missing<span class="n">13</span></div>`;
 
   const rows = INCIDENTS.map(i=>`
-    <tr data-cluster="${i.cluster}" data-namespace="${i.ns}" onclick='openInc(${JSON.stringify(i).replace(/'/g,"&#39;")})'>
-      <td>${sev(i.sev)}</td>
-      <td class="strong">${i.name}<div class="cellsub">${i.mitre}</div></td>
+    <tr data-cluster="${i.cluster}" data-namespace="${i.ns}" class="clickable-row" onclick='openInc(${JSON.stringify(i).replace(/'/g,"&#39;")})'>
+      <td class="col-cb"><span class="cb"></span></td>
+      <td class="col-sev"><span class="sevstrip" style="background:${SEV_COLOR[i.sev]}"></span></td>
       <td>${clsf(i.classification)}</td>
-      <td class="muted">${i.cluster} / ${i.ns}<div class="cellsub">${i.workload}</div></td>
+      <td class="strong">${i.name}</td>
+      <td class="muted">${i.mitre}</td>
+      <td class="muted" style="white-space:nowrap">${i.cluster} / ${i.ns}<div class="cellsub">${i.workload}</div></td>
+      <td class="muted" style="white-space:nowrap">${i.time}</td>
+      <td>${i.response?`<span class="chip" style="color:#053CA1;background:#eef3ff"><span class="dot" style="background:#053CA1"></span>${i.response}</span>`:'<span class="muted">Report</span>'}</td>
       <td><span class="tag">${i.status}</span></td>
-      <td>${i.response?`<span class="chip" style="color:#053CA1;background:#eef3ff"><span class="dot" style="background:#053CA1"></span>${i.response}</span>`:'<span class="muted">—</span>'}</td>
-      <td>${i.ticket?`<span class="tag">🎫 ${i.ticket}</span>`:'<span class="muted">—</span>'}</td>
-      <td class="muted">${i.time}</td></tr>`).join("");
-  document.getElementById("incTable").innerHTML = table(
-    [{t:"Severity"},{t:"Threat"},{t:"Classification"},{t:"Resource"},{t:"Status"},{t:"Response"},{t:"Ticket"},{t:"First seen"}], rows);
+      <td>${i.ticket?'<span class="tkt">🎫</span>':''}</td>
+      <td class="col-end"><span class="chevbtn">⋯</span></td>
+    </tr>`).join("");
+  document.getElementById("t").innerHTML = table(
+    [{t:"",cls:"col-cb"},{t:"",cls:"col-sev"},{t:"Classification"},{t:"Incident name"},{t:"MITRE tactic"},{t:"Affected assets"},{t:"First seen"},{t:"Response"},{t:"Status"},{t:""},{t:"",cls:"col-end"}], rows);
   document.getElementById("cnt").textContent = INCIDENTS.length + " incidents";
+  document.getElementById("pager").innerHTML = `<span>Incidents 1–${INCIDENTS.length} of ${INCIDENTS.length}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 
   function openInc(i){
     openDrawer(`<div class="drawer-head"><div>${sev(i.sev)} ${clsf(i.classification)}<h2>${i.name}</h2><div class="muted" style="margin-top:6px">${i.cluster} / ${i.ns} / ${i.workload} · ${i.time}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
@@ -70,6 +77,4 @@
         <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap"><button class="btn primary" onclick="toast('Status updated')">Change status</button><button class="btn" onclick="toast('Incident reclassified')">Reclassify</button><button class="btn" onclick="toast('Response applied')">Respond</button><button class="btn" onclick="toast('Ticket created')">Create ticket</button></div>
       </div>`);
   }
-</script>
-</body>
-</html>
+</script></body></html>

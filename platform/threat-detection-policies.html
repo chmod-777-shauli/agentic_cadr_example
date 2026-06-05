@@ -1,22 +1,37 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ARMO · Threat Detection Policies</title><link rel="stylesheet" href="assets/app.css"></head>
+<title>ARMO · Threat Detection</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="threat-detection-policies" data-title="Threat Detection">
-  <div class="page-head"><div><h1>Threat Detection</h1><div class="sub">Detection rules &amp; response policies for runtime incidents</div></div>
-  <div class="page-actions"><button class="btn">Add custom rule</button><button class="btn primary">Create policy</button></div></div>
-  <div class="tabs" id="tabs"><div class="tab active" data-v="policies">Policies</div><div class="tab" data-v="rules">Rules</div></div>
-  <div class="toolbar"><div class="filter-pill on">Enabled ✕</div><div class="grow"></div><span class="count-note" id="cnt"></span></div>
-  <div id="b"></div>
+  <div class="page-head" style="align-items:center">
+    <div class="toggle-group" id="tabs"><div class="tg on" data-v="policies">Policies</div><div class="tg" data-v="rules">Rules</div></div>
+    <div class="page-actions"><button class="btn primary" id="addBtn">+ Add Policy ▾</button></div>
+  </div>
+  <div class="toolbar" id="filters"></div>
+  <div id="b"></div><div class="paginator" id="pager"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const policies=[["Critical workloads — auto-respond","52 incident types","Kill + Network Policy","prod-eu-1, prod-us-1",true],["Cloud detection (CDR)","AWS CloudTrail rules","Notify Slack + Jira","all accounts",true],["Staging — monitor only","All","Report",">staging-eu-1",true],["Crypto-mining","3 rules","Pause container","all clusters",false]];
-  const rules=[["Reverse shell","Behavioral","Execution","Critical",true],["Crypto miner execution","Signature","Impact","Critical",true],["Suspicious binary from /tmp","Behavioral","Defense Evasion","High",true],["AWS root login anomaly","CDR","Initial Access","Critical",true],["Package manager at runtime","Behavioral","—","Low",false]];
+  const POLICIES=[
+    {en:true,name:"Critical workloads — auto-respond",type:"ADR",resp:"Kill, Apply Network Policy",scope:"prod-eu-1, prod-us-1",upd:"Jun 4, 2026",by:"shauli"},
+    {en:true,name:"Cloud detection (CDR)",type:"CDR",resp:"Report",scope:"AWS · all accounts",upd:"Jun 2, 2026",by:"dana"},
+    {en:true,name:"Staging — monitor only",type:"ADR",resp:"Report",scope:"staging-eu-1",upd:"May 30, 2026",by:"ops"},
+    {en:false,name:"Crypto-mining response",type:"ADR",resp:"Pause container",scope:"all clusters",upd:"May 21, 2026",by:"shauli"},
+  ];
+  const RULES=[
+    {sev:"Critical",name:"Reverse shell",dom:"ADR",type:"Managed",mitre:"Execution",desc:"Interactive shell spawned and connected outbound",tags:["c2","shell"],upd:"Jun 1, 2026"},
+    {sev:"Critical",name:"Crypto miner execution",dom:"ADR",type:"Managed",mitre:"Impact",desc:"Known mining binary signature + sustained CPU",tags:["mining"],upd:"Jun 1, 2026"},
+    {sev:"High",name:"Suspicious binary from /tmp",dom:"ADR",type:"Custom",mitre:"Defense Evasion",desc:"Execution of a binary from a world-writable dir",tags:["exec","custom"],upd:"May 28, 2026"},
+    {sev:"Critical",name:"AWS root login anomaly",dom:"CDR",type:"Managed",mitre:"Initial Access",desc:"Root console login from a new geography",tags:["aws","cdr"],upd:"Jun 3, 2026"},
+  ];
+  const FILT={policies:["Policy name","Type","Response","Cluster","Namespace"],rules:["Severity","Rule name","Rule domain","Type","MITRE tactic","Tag"]};
   const V={
-    policies(){ return table([{t:"Policy"},{t:"Scope rules"},{t:"Actions"},{t:"Clusters"},{t:"Enabled"}],
-      policies.map(p=>`<tr onclick="closeDrawer()"><td class="strong">${p[0]}</td><td class="muted">${p[1]}</td><td><span class="tag">${p[2]}</span></td><td class="muted">${p[3]}</td><td>${p[4]?'<span class="pass">On</span>':'<span class="muted">Off</span>'}</td></tr>`).join("")); },
-    rules(){ return table([{t:"Rule"},{t:"Type"},{t:"MITRE"},{t:"Severity"},{t:"Enabled"}],
-      rules.map(r=>`<tr onclick="closeDrawer()"><td class="strong">${r[0]}</td><td><span class="tag">${r[1]}</span></td><td class="muted">${r[2]}</td><td>${sev(r[3])}</td><td>${r[4]?'<span class="pass">On</span>':'<span class="muted">Off</span>'}</td></tr>`).join("")); }
+    policies(){ return table([{t:"Enable"},{t:"Policy name"},{t:"Type"},{t:"Response"},{t:"Scope"},{t:"Last update"},{t:"",cls:"col-end"}],
+      POLICIES.map(p=>`<tr class="clickable-row" onclick="toast('Edit policy')"><td><span class="switch ${p.en?'':'off'}"></span></td><td class="strong">${p.name}</td><td><span class="tag">${p.type}</span></td><td>${p.resp}</td><td class="muted">${p.scope}</td><td class="muted">${p.upd}<div class="cellsub">by ${p.by}</div></td><td class="col-end"><span class="chevbtn">✎</span></td></tr>`).join("")); },
+    rules(){ return table([{t:"Severity"},{t:"Rule name"},{t:"Rule domain"},{t:"Type"},{t:"MITRE tactic"},{t:"Description"},{t:"Tags"},{t:"Last update"},{t:"",cls:"col-end"}],
+      RULES.map(r=>`<tr class="clickable-row" onclick="toast('Open rule')"><td>${sev(r.sev)}</td><td class="strong">${r.name}</td><td class="muted">${r.dom}</td><td><span class="tag">${r.type}</span></td><td class="muted">${r.mitre}</td><td class="muted">${r.desc}</td><td>${r.tags.slice(0,1).map(t=>`<span class="tag">${t}</span>`).join("")}${r.tags.length>1?`<span class="muted"> +${r.tags.length-1}</span>`:''}</td><td class="muted">${r.upd}</td><td class="col-end"><span class="chevbtn">${r.type==='Custom'?'✎':'📄'}</span></td></tr>`).join("")); }
   };
-  function show(v){ document.getElementById("b").innerHTML=V[v](); document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.v===v)); document.getElementById("cnt").textContent=document.querySelectorAll("#b tbody tr").length+" results"; }
-  document.querySelectorAll("#tabs .tab").forEach(t=>t.onclick=()=>show(t.dataset.v)); show("policies");
+  function show(v){ document.getElementById("b").innerHTML=V[v](); document.querySelectorAll("#tabs .tg").forEach(t=>t.classList.toggle("on",t.dataset.v===v));
+    document.getElementById("filters").innerHTML = FILT[v].map(f=>`<div class="filter-pill">${f} ▾</div>`).join("")+'<div class="grow"></div><button class="btn sm">☆ Save filters</button>';
+    document.getElementById("addBtn").style.display = v==="policies"?"":"none";
+    document.getElementById("pager").innerHTML = `<span>${v==="policies"?"Policies":"Rules"} 1–4 of ${v==="policies"?12:64}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`; }
+  document.querySelectorAll("#tabs .tg").forEach(t=>t.onclick=()=>show(t.dataset.v)); show("policies");
 </script></body></html>
