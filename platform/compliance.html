@@ -7,72 +7,63 @@
 </head>
 <body data-page="compliance" data-title="Compliance">
 
-  <div class="page-head">
-    <div><h1>Compliance</h1><div class="sub">Configuration scanning against security frameworks · Kubernetes</div></div>
-    <div class="page-actions"><button class="btn">Custom framework</button><button class="btn primary">Generate report</button></div>
-  </div>
-
-  <div class="tabs">
-    <div class="tab active">Kubernetes</div>
-    <div class="tab">Cloud</div>
-  </div>
-
-  <div class="section-label" style="margin-top:0">Frameworks</div>
-  <div class="grid cols-3" id="fw" style="margin-bottom:8px"></div>
-
-  <div class="card" style="margin:18px 0">
-    <div class="card-head"><h3>Failed controls</h3><span class="count-note" id="cnt"></span></div>
-    <div class="toolbar">
-      <div class="filter-pill on">Status: Failed ✕</div>
-      <div class="filter-pill">Severity ▾</div>
-      <div class="filter-pill">Framework ▾</div>
+  <div class="page-head" style="align-items:center">
+    <div class="toggle-group">
+      <div class="tg on">Kubernetes</div>
+      <div class="tg">Cloud</div>
     </div>
-    <div id="controls"></div>
+    <div class="page-actions"><button class="btn">+ Add cluster</button></div>
   </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="widget-title">Total Failed Resources</div>
+    <div style="display:flex;align-items:center;gap:26px">
+      <div class="kpi-num" style="font-size:30px;margin:0">2,184</div>
+      <div style="flex:1" id="totBar"></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">Framework ▾</div>
+    <div class="filter-pill">Provider ▾</div>
+    <div class="filter-pill">+ Add filter</div>
+    <div class="grow"></div>
+    <button class="btn sm">☆ Save filters</button>
+  </div>
+
+  <div id="t"></div>
+  <div class="paginator" id="pager"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-  function ring(score){
-    const c = score>=80?'#049d54':score>=65?'#fb9000':'#e11900';
-    const deg = score*3.6;
-    return `<div class="score-ring" style="border-radius:50%;background:conic-gradient(${c} ${deg}deg,#eef1f6 0)"><div style="width:48px;height:48px;margin:8px;background:#fff;border-radius:50%;display:grid;place-items:center;font-weight:800;color:${c}">${score}</div></div>`;
-  }
-  document.getElementById("fw").innerHTML = FRAMEWORKS.map(f=>`
-    <div class="card" style="cursor:pointer" onclick="closeDrawer()">
-      <div class="gauge-row">
-        ${ring(f.score)}
-        <div><div style="font-weight:700;font-size:14px">${f.name}</div>
-        <div class="muted" style="margin-top:4px">${f.controls} controls · <span class="fail">${f.failed} failed</span></div></div>
-      </div>
-    </div>`).join("");
+  const tot = {Critical:118, High:642, Medium:901, Low:523};
+  document.getElementById("totBar").innerHTML = `${sevbar(tot)}<div style="margin-top:8px">${sevCounts(tot)}</div>`;
 
-  const failed = CONTROLS.filter(c=>c.status==="fail");
-  const rows = failed.map(c=>`
-    <tr onclick='openControl(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
-      <td class="mono strong">${c.id}</td><td class="strong">${c.name}</td><td>${sev(c.sev)}</td>
-      <td style="width:220px"><div class="sevbar"><span style="flex:${c.failed};background:${SEV_COLOR[c.sev]}"></span><span style="flex:${c.total-c.failed};background:#E4F6EC"></span></div></td>
-      <td class="num"><span class="fail">${c.failed}</span> <span class="muted">/ ${c.total}</span></td></tr>`).join("");
-  document.getElementById("controls").innerHTML = table([{t:"Control"},{t:"Name"},{t:"Severity"},{t:"Failed / passed"},{t:"Resources",cls:"num"}], rows);
-  document.getElementById("cnt").textContent = failed.length + " failed controls";
+  const STATUS = { Connected:"#049d54", Scanning:"#0090ff", Disconnected:"#A2A2A7" };
+  const CL = [
+    {short:"prod-eu-1", prefix:"arn:aws:eks:eu-central-1", provider:"EKS", status:"Connected", nodes:12, date:"Jun 5, 2026", time:"08:14", fw:"All", failed:{Critical:9,High:42,Medium:130,Low:88}},
+    {short:"prod-us-1", prefix:"arn:aws:eks:us-east-1", provider:"EKS", status:"Connected", nodes:9, date:"Jun 5, 2026", time:"08:10", fw:"NSA, CIS, MITRE", failed:{Critical:7,High:31,Medium:96,Low:74}},
+    {short:"staging-eu-1", prefix:"gke_armo_europe-west1", provider:"GKE", status:"Connected", nodes:4, date:"Jun 4, 2026", time:"22:02", fw:"CIS", failed:{Critical:2,High:18,Medium:54,Low:61}},
+    {short:"dev-1", prefix:"aks-armo-dev", provider:"AKS", status:"Scanning", nodes:3, date:"Jun 5, 2026", time:"09:01", fw:"All", failed:{Critical:0,High:9,Medium:41,Low:33}},
+  ];
 
-  function openControl(c){
-    openDrawer(`<div class="drawer-head"><div>${sev(c.sev)}<h2>${c.name}</h2><div class="muted mono" style="margin-top:6px">${c.id}</div></div><div class="x" onclick="closeDrawer()">✕</div></div>
-      <div class="drawer-body">
-        <div class="grid cols-2"><div class="card kpi"><div class="kpi-label">Failed resources</div><div class="kpi-num fail" style="font-size:24px">${c.failed}</div></div><div class="card kpi"><div class="kpi-label">Scanned</div><div class="kpi-num" style="font-size:24px">${c.total}</div></div></div>
-        <div class="section-label">What it checks</div>
-        <p>Verifies that <b>${c.name.toLowerCase()}</b> is enforced across all workloads. Failing this control increases the blast radius of a container compromise.</p>
-        <div class="section-label">Failed resources (${c.failed})</div>
-        <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr><td class="strong">payments-api</td><td class="muted">payments · prod-eu-1</td><td class="fail">Fail</td></tr>
-          <tr><td class="strong">auth-service</td><td class="muted">auth · prod-us-1</td><td class="fail">Fail</td></tr>
-          <tr><td class="strong">edge-proxy</td><td class="muted">prod · prod-us-1</td><td class="fail">Fail</td></tr>
-        </tbody></table></div>
-        <div class="section-label">Remediation</div>
-        <div class="card" style="font-family:ui-monospace,Menlo,monospace;font-size:12px;white-space:pre-wrap">Set the appropriate securityContext / policy on the workload spec and re-deploy.</div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Ticket created for '+c.id)">Create ticket</button><button class="btn" onclick="go('risk-acceptance.html')">Add exception</button></div>
-      </div>`);
-  }
+  const rows = CL.map(c=>`
+    <tr data-cluster="${c.short}" class="clickable-row" onclick="go('security-risks.html')">
+      <td><span class="status-dot" style="background:${STATUS[c.status]}"></span>${c.status}</td>
+      <td><div class="strong" style="font-size:15px">${c.short}</div><div class="cellsub mono">${c.prefix}</div></td>
+      <td><span class="tag">${c.provider}</span></td>
+      <td class="num">${c.nodes}</td>
+      <td class="muted" style="white-space:nowrap">${c.date}<div class="cellsub">${c.time}</div></td>
+      <td>${c.fw==="All"?'<span class="muted">All</span>':c.fw.split(", ").map(f=>`<span class="tag" style="margin-right:4px">${f}</span>`).join("")}</td>
+      <td style="min-width:220px">${sevbar(c.failed)}<div class="cellsub" style="margin-top:5px">${sevCounts(c.failed)}</div></td>
+    </tr>`).join("");
+  document.getElementById("t").innerHTML = table(
+    [{t:"Status"},{t:"Cluster name"},{t:"Provider"},{t:"Nodes",cls:"num"},{t:"Last scan"},{t:"Frameworks"},{t:"Failed Resources"}], rows);
+
+  document.getElementById("pager").innerHTML =
+    `<span>Clusters 1–${CL.length} of ${CL.length}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 </script>
 </body>
 </html>
