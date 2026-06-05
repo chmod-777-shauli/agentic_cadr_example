@@ -7,34 +7,32 @@
 </head>
 <body data-page="vulnerabilities" data-title="Vulnerabilities">
 
-  <div class="page-head">
-    <div><h1>Vulnerabilities</h1><div class="sub">Image &amp; workload scanning with runtime reachability and KEV/EPSS prioritization</div></div>
-    <div class="page-actions"><button class="btn">Export SBOM</button><button class="btn primary">Scan now</button></div>
-  </div>
-
-  <div class="grid cols-6" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Critical</div><div class="kpi-num" style="color:var(--sev-crit)">12</div></div>
-    <div class="card kpi"><div class="kpi-label">High</div><div class="kpi-num" style="color:var(--sev-high)">135</div></div>
-    <div class="card kpi"><div class="kpi-label">Known-exploited</div><div class="kpi-num">8</div></div>
-    <div class="card kpi"><div class="kpi-label">Fixable</div><div class="kpi-num">119</div></div>
-    <div class="card kpi"><div class="kpi-label">Images</div><div class="kpi-num">61</div></div>
-    <div class="card kpi"><div class="kpi-label">In-use</div><div class="kpi-num">73%</div></div>
-  </div>
-
-  <div class="tabs" id="tabs">
-    <div class="tab active" data-v="cves">CVEs</div>
-    <div class="tab" data-v="images">Images</div>
-    <div class="tab" data-v="workloads">Workloads</div>
-    <div class="tab" data-v="sbom">SBOM</div>
-    <div class="tab" data-v="hosts">Hosts</div>
+  <div class="page-head" style="align-items:center">
+    <div class="toggle-group" id="tabs">
+      <div class="tg" data-v="workloads">Workloads</div>
+      <div class="tg on" data-v="images">Images</div>
+      <div class="tg" data-v="cves">CVEs</div>
+      <div class="tg" data-v="sbom">SBOM</div>
+      <div class="tg" data-v="hosts">Hosts</div>
+    </div>
+    <div class="page-actions"><button class="btn primary">↻ Scan vulnerabilities</button></div>
   </div>
 
   <div class="toolbar">
-    <div class="filter-pill on">Fixable only ✕</div>
     <div class="filter-pill">Severity ▾</div>
+    <div class="filter-pill">Cluster ▾</div>
     <div class="filter-pill">In-use ▾</div>
-    <div class="filter-pill">KEV ▾</div>
-    <div class="grow"></div><span class="count-note" id="cnt"></span>
+    <div class="filter-pill">Fixable ▾</div>
+    <div class="filter-pill">+ Add filter</div>
+    <div class="grow"></div>
+    <div class="hotcve-toggle"><span class="switch"></span> Hot CVEs</div>
+    <div class="spotlight-toggle"><span class="switch"></span> Risk spotlight</div>
+  </div>
+
+  <div class="toolbar" style="margin-top:-4px">
+    <span class="count-note" id="cnt"></span>
+    <div class="grow"></div>
+    <button class="btn sm">⤓ Download</button>
   </div>
 
   <div id="vbody"></div>
@@ -80,9 +78,9 @@
       return table([{t:"Host"},{t:"Cluster"},{t:"OS"},{t:"Critical",cls:"num"},{t:"High",cls:"num"}], hosts.map(h=>`<tr><td class="strong mono">${h[0]}</td><td class="muted">${h[1]}</td><td>${h[2]}</td><td class="num" style="color:var(--sev-crit);font-weight:700">${h[3]}</td><td class="num" style="color:var(--sev-high);font-weight:700">${h[4]}</td></tr>`).join(""));
     }
   };
-  function show(v){ document.getElementById("vbody").innerHTML = views[v](); document.querySelectorAll("#tabs .tab").forEach(t=>t.classList.toggle("active",t.dataset.v===v)); document.getElementById("cnt").textContent = document.querySelectorAll("#vbody tbody tr").length + " results"; if(window.applyClusterFilter) window.applyClusterFilter(); }
-  document.querySelectorAll("#tabs .tab").forEach(t=>t.onclick=()=>show(t.dataset.v));
-  show("cves");
+  function show(v){ document.getElementById("vbody").innerHTML = views[v](); document.querySelectorAll("#tabs .tg").forEach(t=>t.classList.toggle("on",t.dataset.v===v)); document.getElementById("cnt").textContent = document.querySelectorAll("#vbody tbody tr").length + " results"; if(window.applyClusterFilter) window.applyClusterFilter(); }
+  document.querySelectorAll("#tabs .tg").forEach(t=>t.onclick=()=>show(t.dataset.v));
+  show("images");
 
   function openCve(c){
     openDrawer(`<div class="drawer-head"><div>${sev(c.sev)} ${kev(c.kev)}<h2 class="mono">${c.id}</h2></div><div class="x" onclick="closeDrawer()">✕</div></div>
