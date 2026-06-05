@@ -8,55 +8,58 @@
 <body data-page="attack-path" data-title="Attack Path">
 
   <div class="page-head">
-    <div><h1>Attack Path</h1><div class="sub">Exploitable chains from external exposure to sensitive assets</div></div>
+    <div><h1>Attack Path</h1></div>
+    <div class="page-actions"><button class="btn primary">↻ Scan all</button></div>
   </div>
 
-  <div class="grid cols-3" style="margin-bottom:16px">
-    <div class="card kpi"><div class="kpi-label">Attack paths</div><div class="kpi-num" style="color:var(--sev-crit)">7</div></div>
-    <div class="card kpi"><div class="kpi-label">Internet-exposed entrypoints</div><div class="kpi-num">3</div></div>
-    <div class="card kpi"><div class="kpi-label">Reachable sensitive assets</div><div class="kpi-num">5</div></div>
+  <div class="toolbar">
+    <div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">Namespace ▾</div>
+    <div class="filter-pill">Severity ▾</div>
+    <div class="grow"></div>
+    <div class="spotlight-toggle"><span class="switch"></span> Risk spotlight</div>
   </div>
 
-  <div class="grid" style="grid-template-columns: 340px 1fr">
-    <div class="card pad0">
-      <div class="card-head" style="padding:14px 16px 0"><h3>Attack paths</h3></div>
-      <div id="pathList" style="margin-top:8px"></div>
-    </div>
-    <div class="card">
-      <div class="card-head"><h3 id="pathTitle">Internet → payments-api → secrets</h3><span class="tag">approximated graph</span></div>
-      <div class="graph-canvas" id="graph"></div>
-      <div class="note">Graph is a visual approximation of the real KeyLines/Cytoscape attack-path view.</div>
-    </div>
-  </div>
+  <div id="acList"></div>
+  <div class="paginator" id="pager"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-  const paths = [
-    {t:"Internet → payments-api → secrets", sev:"Critical", hops:4},
-    {t:"Internet → web-frontend → RBAC escalation", sev:"Critical", hops:5},
-    {t:"Public LB → auth-service → DB credentials", sev:"High", hops:3},
-    {t:"Compromised pod → cluster-admin", sev:"High", hops:2},
-    {t:"Exposed dashboard → node takeover", sev:"Medium", hops:3},
+  const CHAINS = [
+    {id:"ac1", desc:"Internet-exposed payments-api can be reached and exploited to read cluster secrets", cluster:"prod-eu-1", ns:"payments", workload:"payments-api", firstSeen:"Jun 2, 2026", isNew:true,
+     nodes:[{x:14,y:50,l:"🌐 Internet",d:1},{x:42,y:50,l:"payments-api",d:1},{x:72,y:32,l:"service-account"},{x:86,y:70,l:"🔑 secrets",d:1}], edges:[[0,1],[1,2],[2,3],[1,3]]},
+    {id:"ac2", desc:"Public web-frontend allows lateral movement leading to RBAC privilege escalation", cluster:"prod-us-1", ns:"prod", workload:"web-frontend", firstSeen:"Jun 4, 2026", isNew:true,
+     nodes:[{x:14,y:50,l:"🌐 Internet",d:1},{x:40,y:50,l:"web-frontend",d:1},{x:66,y:35,l:"pod"},{x:88,y:60,l:"cluster-admin",d:1}], edges:[[0,1],[1,2],[2,3]]},
+    {id:"ac3", desc:"Exposed auth-service exposes database credentials to an external attacker", cluster:"prod-us-1", ns:"auth", workload:"auth-service", firstSeen:"May 30, 2026", isNew:false,
+     nodes:[{x:14,y:50,l:"🌐 LB",d:1},{x:44,y:50,l:"auth-service",d:1},{x:80,y:50,l:"🔑 DB creds",d:1}], edges:[[0,1],[1,2]]},
+    {id:"ac4", desc:"Compromised pod can reach cluster-admin via a default service account token", cluster:"prod-eu-1", ns:"kube-system", workload:"sa-token", firstSeen:"Jun 1, 2026", isNew:false,
+     nodes:[{x:18,y:50,l:"pod",d:1},{x:54,y:50,l:"default SA"},{x:86,y:50,l:"cluster-admin",d:1}], edges:[[0,1],[1,2]]},
   ];
-  document.getElementById("pathList").innerHTML = paths.map((p,idx)=>`
-    <div onclick="sel(${idx})" style="display:flex;gap:10px;align-items:center;padding:12px 16px;border-top:1px solid var(--line-soft);cursor:pointer">
-      ${sev(p.sev)}<div style="flex:1"><div style="font-weight:600;font-size:12.5px">${p.t}</div><div class="cellsub">${p.hops} hops</div></div></div>`).join("");
 
-  const nodes = [
-    {x:12,y:50,l:"🌐 Internet",d:1},{x:34,y:30,l:"LB / Ingress"},{x:34,y:70,l:"web-frontend"},
-    {x:58,y:50,l:"payments-api",d:1},{x:80,y:30,l:"service-account"},{x:88,y:72,l:"🔑 secrets",d:1}
-  ];
-  const edges=[[0,1],[0,2],[1,3],[2,3],[3,4],[4,5],[3,5]];
-  function drawGraph(){
-    const g=document.getElementById("graph"); const W=g.clientWidth, H=g.clientHeight;
-    let svg=`<svg width="100%" height="100%" style="position:absolute;inset:0">`;
-    edges.forEach(([a,b])=>{ svg+=`<line x1="${nodes[a].x/100*W}" y1="${nodes[a].y/100*H}" x2="${nodes[b].x/100*W}" y2="${nodes[b].y/100*H}" stroke="#c3cbe0" stroke-width="2"/>`; });
+  function miniGraph(c){
+    const W=420,H=120;
+    let svg=`<svg width="100%" height="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="position:absolute;inset:0">`;
+    c.edges.forEach(([a,b])=>{ svg+=`<line x1="${c.nodes[a].x/100*W}" y1="${c.nodes[a].y/100*H}" x2="${c.nodes[b].x/100*W}" y2="${c.nodes[b].y/100*H}" stroke="#c3cbe0" stroke-width="2"/>`; });
     svg+=`</svg>`;
-    g.innerHTML = svg + nodes.map(n=>`<div class="node ${n.d?'danger':''}" style="left:${n.x}%;top:${n.y}%"><span class="ni"></span>${n.l}</div>`).join("");
+    return svg + c.nodes.map(n=>`<div class="ac-node ${n.d?'danger':''}" style="left:${n.x}%;top:${n.y}%"><span class="nd"></span>${n.l}</div>`).join("");
   }
-  function sel(i){ document.getElementById("pathTitle").textContent = paths[i].t; }
-  drawGraph(); window.addEventListener("resize", drawGraph);
+
+  document.getElementById("acList").innerHTML = CHAINS.map(c=>`
+    <div class="ac-card" data-cluster="${c.cluster}" data-namespace="${c.ns}" onclick='openWorkload("${c.workload}")'>
+      <div>
+        <div class="ac-fs">First seen: ${c.firstSeen} ${c.isNew?'<span class="ac-new">NEW</span>':''}</div>
+        <div class="ac-desc">${c.desc}</div>
+        <div class="ac-meta"><b>Cluster:</b> ${c.cluster}</div>
+        <div class="ac-meta"><b>Namespace:</b> ${c.ns}</div>
+        <div class="ac-meta"><b>Workload:</b> ${c.workload}</div>
+      </div>
+      <div class="ac-graph">${miniGraph(c)}</div>
+      <div><button class="btn primary" onclick="event.stopPropagation();toast('Opening remediation for ${c.workload}')">🔧 Fix</button></div>
+    </div>`).join("");
+
+  document.getElementById("pager").innerHTML =
+    `<span>Attack paths 1–${CHAINS.length} of ${CHAINS.length}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 </script>
 </body>
 </html>
