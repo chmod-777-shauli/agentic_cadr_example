@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#ffffff" />
+<title>ARMO Mobile — Runtime Threats (Mockup)</title>
+<style>
+  :root {
+    --bg: #eef2f7;
+    --bg-elev: #ffffff;
+    --bg-elev2: #f3f6fa;
+    --bg-sheet: #ffffff;
+    --line: #e2e8f0;
+    --line-soft: #eef1f6;
+    --txt: #0c2233;
+    --txt-dim: #55657a;
+    --txt-faint: #94a3b3;
+    --accent: #0d9488;
+    --accent-dim: #7fd8cd;
+    --on-accent: #ffffff;
+    --track: #e9eef4;
+
+    --crit: #dc2626;
+    --high: #ea580c;
+    --med:  #c2820a;
+    --low:  #2563eb;
+    --negl: #64748b;
+    --unk:  #94a3b8;
+
+    --crit-bg: rgba(220,38,38,.10);
+    --high-bg: rgba(234,88,12,.11);
+    --med-bg:  rgba(194,130,10,.14);
+    --low-bg:  rgba(37,99,235,.10);
+
+    --radius: 16px;
+    --radius-sm: 11px;
+    --shadow: 0 8px 30px rgba(15,34,51,.12);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #dfe6ef;
+    color: var(--txt);
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+  }
+
+  /* Phone frame on desktop; full-bleed on real phones */
+  #phone {
+    position: relative;
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    max-height: 932px;
+    background: var(--bg);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  @media (min-width: 480px) {
+    body { background: radial-gradient(1200px 800px at 50% -10%, #ffffff, #dbe3ed 60%); padding: 20px; }
+    #phone { border-radius: 38px; border: 1px solid #d3dce6; box-shadow: 0 30px 80px rgba(15,34,51,.20); height: 90vh; }
+  }
+
+  /* ---------- top bar ---------- */
+  .topbar {
+    flex: 0 0 auto;
+    padding: calc(var(--safe-top) + 12px) 16px 12px;
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(180deg, var(--bg) 70%, rgba(11,15,20,.0));
+    border-bottom: 1px solid var(--line-soft);
+    z-index: 20;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; letter-spacing: .3px; }
+  .brand .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+  .tenant {
+    margin-left: auto; display: flex; align-items: center; gap: 6px;
+    background: var(--bg-elev); border: 1px solid var(--line); color: var(--txt-dim);
+    padding: 7px 11px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .iconbtn {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--bg-elev); border: 1px solid var(--line);
+    display: grid; place-items: center; color: var(--txt-dim); cursor: pointer; font-size: 16px;
+  }
+  .topbar .title-only { font-size: 18px; font-weight: 700; }
+
+  /* ---------- scroll content ---------- */
+  .content { flex: 1 1 auto; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 14px 14px 90px; }
+  .screen { display: none; }
+  .screen.active { display: block; animation: fade .18s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .section-label { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--txt-faint); margin: 18px 4px 8px; font-weight: 700; }
+  .refresh-row { display: flex; align-items: center; justify-content: space-between; padding: 2px 4px 4px; }
+  .refresh-row .upd { font-size: 12px; color: var(--txt-faint); }
+  .refresh-row .ref { font-size: 12px; color: var(--accent); cursor: pointer; font-weight: 600; }
+
+  /* ---------- cards ---------- */
+  .card {
+    background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 16px; margin-bottom: 12px;
+  }
+  .card.tap { cursor: pointer; transition: transform .08s ease, border-color .15s; }
+  .card.tap:active { transform: scale(.985); border-color: #2c3845; }
+  .card-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .card-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--txt); }
+  .card-head .chev { color: var(--txt-faint); font-size: 18px; }
+
+  /* headline counter */
+  .headline { display: flex; align-items: baseline; gap: 10px; }
+  .headline .num { font-size: 44px; font-weight: 800; line-height: 1; letter-spacing: -1px; }
+  .headline .lbl { color: var(--txt-dim); font-size: 14px; font-weight: 600; }
+  .sevbar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin: 16px 0 12px; background: var(--track); }
+  .sevbar > span { height: 100%; }
+  .sevlegend { display: flex; flex-wrap: wrap; gap: 10px 16px; }
+  .sevlegend .it { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--txt-dim); font-weight: 600; }
+  .sevlegend .it i { width: 9px; height: 9px; border-radius: 3px; display: inline-block; }
+
+  /* needs attention */
+  .attn { display: flex; align-items: center; gap: 14px; }
+  .attn .big { font-size: 34px; font-weight: 800; color: var(--crit); line-height: 1; }
+  .attn .meta { flex: 1; }
+  .attn .meta .t { font-weight: 700; font-size: 15px; }
+  .attn .meta .s { color: var(--txt-dim); font-size: 13px; margin-top: 2px; }
+
+  /* sparkline */
+  .spark { width: 100%; height: 64px; display: block; }
+  .trend-legend { display: flex; gap: 18px; margin-top: 10px; font-size: 12.5px; color: var(--txt-dim); font-weight: 600; }
+  .trend-legend i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; margin-right: 6px; vertical-align: middle; }
+
+  /* ranked list (top threats / hotspots) */
+  .rank { display: flex; align-items: center; gap: 12px; padding: 9px 0; border-top: 1px solid var(--line-soft); }
+  .rank:first-of-type { border-top: 0; }
+  .rank .nm { flex: 1; font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rank .barwrap { flex: 1.1; height: 7px; background: var(--track); border-radius: 4px; overflow: hidden; }
+  .rank .barwrap > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); }
+  .rank .ct { width: 28px; text-align: right; font-weight: 700; font-size: 14px; color: var(--txt); }
+
+  .coverage { display: flex; align-items: center; gap: 10px; }
+  .coverage .ok { color: var(--accent); font-weight: 700; }
+  .coverage .txt { color: var(--txt-dim); font-size: 14px; font-weight: 600; }
+
+  /* ---------- feed ---------- */
+  .toolbar { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+  .search {
+    flex: 1; display: flex; align-items: center; gap: 8px; background: var(--bg-elev); border: 1px solid var(--line);
+    border-radius: 999px; padding: 9px 14px; color: var(--txt-faint);
+  }
+  .search input { flex: 1; background: transparent; border: 0; outline: 0; color: var(--txt); font-size: 14px; }
+  .pillbtn {
+    background: var(--bg-elev); border: 1px solid var(--line); color: var(--txt-dim);
+    border-radius: 999px; padding: 9px 13px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .pillbtn.on { color: var(--accent); border-color: var(--accent-dim); background: rgba(45,212,191,.08); }
+  .pillbtn .badge { background: var(--accent); color: var(--on-accent); border-radius: 999px; font-size: 11px; font-weight: 800; padding: 0 6px; }
+
+  .quickfilters { display: flex; gap: 8px; overflow-x: auto; padding: 2px 2px 12px; margin: 0 -2px; }
+  .quickfilters::-webkit-scrollbar { display: none; }
+  .chip {
+    flex: 0 0 auto; background: var(--bg-elev); border: 1px solid var(--line); color: var(--txt-dim);
+    border-radius: 999px; padding: 7px 13px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .chip.on { background: rgba(45,212,191,.10); border-color: var(--accent-dim); color: var(--accent); }
+
+  .group-hdr { display: flex; align-items: center; gap: 8px; margin: 16px 2px 8px; }
+  .group-hdr .gname { font-weight: 700; font-size: 13.5px; }
+  .group-hdr .gcount { color: var(--txt-faint); font-size: 12.5px; font-weight: 600; }
+  .group-hdr .line { flex: 1; height: 1px; background: var(--line-soft); }
+
+  .inc {
+    background: var(--bg-elev); border: 1px solid var(--line); border-radius: var(--radius-sm);
+    padding: 13px 14px 12px; margin-bottom: 10px; cursor: pointer; position: relative; overflow: hidden;
+    transition: transform .08s, border-color .15s;
+  }
+  .inc:active { transform: scale(.99); }
+  .inc::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; }
+  .inc.s-Critical::before { background: var(--crit); }
+  .inc.s-High::before { background: var(--high); }
+  .inc.s-Medium::before { background: var(--med); }
+  .inc.s-Low::before { background: var(--low); }
+  .inc.s-Negligible::before, .inc.s-Unknown::before { background: var(--negl); }
+
+  .inc-top { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .sev-chip { font-size: 10.5px; font-weight: 800; letter-spacing: .5px; padding: 3px 7px; border-radius: 6px; text-transform: uppercase; }
+  .sev-Critical { color: var(--crit); background: var(--crit-bg); }
+  .sev-High { color: var(--high); background: var(--high-bg); }
+  .sev-Medium { color: var(--med); background: var(--med-bg); }
+  .sev-Low { color: var(--low); background: var(--low-bg); }
+  .sev-Negligible, .sev-Unknown { color: var(--negl); background: rgba(123,135,148,.14); }
+  .inc-name { font-weight: 700; font-size: 14.5px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .inc-time { color: var(--txt-faint); font-size: 12px; white-space: nowrap; }
+
+  .inc-mid { display: flex; align-items: center; gap: 8px; margin-bottom: 7px; flex-wrap: wrap; }
+  .clsf { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; display: inline-flex; align-items: center; gap: 5px; }
+  .clsf::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .cl-ActiveThreat { color: var(--crit); background: var(--crit-bg); }
+  .cl-UnsuccessfulAttack { color: var(--high); background: var(--high-bg); }
+  .cl-ReviewRequired { color: var(--med); background: var(--med-bg); }
+  .cl-Informational { color: var(--low); background: var(--low-bg); }
+  .cl-Analyzing, .cl-ClassificationUnavailable { color: var(--negl); background: rgba(123,135,148,.14); }
+  .status-tag { font-size: 11px; font-weight: 700; color: var(--txt-dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 9px; }
+
+  .inc-res { color: var(--txt-dim); font-size: 12.5px; display: flex; align-items: center; gap: 6px; }
+  .inc-res .sep { color: var(--txt-faint); }
+  .inc-foot { display: flex; gap: 12px; margin-top: 8px; font-size: 11.5px; color: var(--txt-faint); font-weight: 600; }
+  .inc-foot .tag { display: inline-flex; align-items: center; gap: 4px; }
+  .inc-foot .resp { color: var(--accent); }
+
+  /* ---------- detail ---------- */
+  #detail { position: absolute; inset: 0; background: var(--bg); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .25s cubic-bezier(.3,.7,.3,1); z-index: 40; }
+  #detail.open { transform: none; }
+  .dt-bar { flex: 0 0 auto; padding: calc(var(--safe-top) + 12px) 12px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line-soft); }
+  .dt-bar .back { font-size: 22px; color: var(--txt-dim); cursor: pointer; padding: 0 6px; }
+  .dt-bar .ttl { font-size: 15px; font-weight: 700; }
+  .dt-body { flex: 1; overflow-y: auto; padding: 14px 14px 120px; }
+
+  .dt-head h1 { font-size: 20px; margin: 4px 0 10px; line-height: 1.25; }
+  .dt-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+  .dt-seen { color: var(--txt-faint); font-size: 12.5px; margin-top: 8px; }
+
+  .reasoning { background: var(--bg-elev); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 11px 13px; margin-top: 12px; font-size: 13px; color: var(--txt-dim); }
+  .reasoning b { color: var(--txt); }
+
+  .kv { display: grid; grid-template-columns: 100px 1fr; gap: 8px 12px; font-size: 13px; }
+  .kv .k { color: var(--txt-faint); font-weight: 600; }
+  .kv .v { color: var(--txt); font-weight: 600; word-break: break-word; }
+  .v.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+  .story { font-size: 13.5px; line-height: 1.55; color: var(--txt-dim); }
+  .story.streaming::after { content: "▋"; color: var(--accent); animation: blink 1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .event { border-top: 1px solid var(--line-soft); padding: 11px 0; }
+  .event:first-child { border-top: 0; }
+  .event .eh { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+  .event .eh .et { flex: 1; font-size: 13.5px; font-weight: 600; }
+  .event .eh .etime { font-size: 11.5px; color: var(--txt-faint); }
+  .event .edet { margin-top: 8px; font-size: 12px; font-family: ui-monospace, Menlo, monospace; color: var(--txt-dim); background: var(--bg-elev2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; white-space: pre-wrap; display: none; }
+  .event.open .edet { display: block; }
+
+  .timeline { position: relative; }
+  .tl { display: flex; gap: 12px; padding-bottom: 14px; position: relative; }
+  .tl:last-child { padding-bottom: 0; }
+  .tl .dotcol { display: flex; flex-direction: column; align-items: center; }
+  .tl .tdot { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); margin-top: 3px; flex: 0 0 auto; }
+  .tl .tdot.fail { background: var(--crit); }
+  .tl .tline { width: 2px; flex: 1; background: var(--line); margin-top: 3px; }
+  .tl:last-child .tline { display: none; }
+  .tl .tc .ta { font-weight: 700; font-size: 13.5px; }
+  .tl .tc .tm { font-size: 12px; color: var(--txt-dim); margin-top: 2px; }
+  .tl .tc .tt { font-size: 11.5px; color: var(--txt-faint); margin-top: 3px; }
+
+  .proc { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--txt-dim); line-height: 1.7; }
+  .proc .hl { color: var(--crit); font-weight: 700; }
+
+  /* sticky action bar in detail */
+  .actionbar { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 12px calc(12px + var(--safe-bot)); background: linear-gradient(0deg, var(--bg) 75%, rgba(11,15,20,0)); display: flex; gap: 8px; z-index: 5; }
+  .actionbar .ab {
+    flex: 1; border-radius: 12px; padding: 12px 6px; border: 1px solid var(--line); background: var(--bg-elev);
+    color: var(--txt); font-weight: 700; font-size: 12.5px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  }
+  .actionbar .ab .ic { font-size: 16px; }
+  .actionbar .ab.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+  .actionbar .ab.danger { color: var(--crit); border-color: rgba(220,38,38,.4); }
+
+  /* ---------- bottom tabs ---------- */
+  .tabs {
+    flex: 0 0 auto; display: flex; background: var(--bg-elev); border-top: 1px solid var(--line);
+    padding: 8px 6px calc(8px + var(--safe-bot));
+  }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--txt-faint); cursor: pointer; font-size: 11px; font-weight: 600; padding: 4px 0; }
+  .tab .ti { font-size: 20px; line-height: 1; }
+  .tab.active { color: var(--accent); }
+
+  /* ---------- bottom sheets ---------- */
+  #scrim { position: absolute; inset: 0; background: rgba(0,0,0,.55); opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 50; }
+  #scrim.show { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg-sheet); border-top: 1px solid var(--line);
+    border-radius: 22px 22px 0 0; padding: 8px 16px calc(20px + var(--safe-bot)); transform: translateY(100%);
+    transition: transform .26s cubic-bezier(.3,.8,.3,1); z-index: 60; max-height: 86%; overflow-y: auto;
+  }
+  .sheet.open { transform: none; }
+  .grab { width: 38px; height: 4px; background: #cbd5e1; border-radius: 999px; margin: 6px auto 14px; }
+  .sheet h2 { font-size: 17px; margin: 0 0 4px; }
+  .sheet .sub { color: var(--txt-dim); font-size: 13px; margin-bottom: 16px; }
+
+  .opt { display: flex; align-items: center; gap: 12px; padding: 13px; border: 1px solid var(--line); border-radius: 12px; margin-bottom: 9px; cursor: pointer; background: var(--bg-elev); }
+  .opt.sel { border-color: var(--accent); background: rgba(45,212,191,.07); }
+  .opt .od { width: 10px; height: 10px; border-radius: 50%; flex: 0 0 auto; }
+  .opt .ol { flex: 1; }
+  .opt .ol .on { font-weight: 700; font-size: 14px; }
+  .opt .ol .os { font-size: 12px; color: var(--txt-dim); margin-top: 2px; }
+  .opt .chk { color: var(--accent); font-weight: 800; opacity: 0; }
+  .opt.sel .chk { opacity: 1; }
+
+  textarea, .txtin {
+    width: 100%; background: var(--bg-elev); border: 1px solid var(--line); color: var(--txt);
+    border-radius: 12px; padding: 12px; font-size: 14px; font-family: inherit; outline: none; resize: none;
+  }
+  textarea:focus, .txtin:focus { border-color: var(--accent-dim); }
+
+  .seg { display: flex; background: var(--bg-elev); border: 1px solid var(--line); border-radius: 12px; padding: 4px; gap: 4px; margin-bottom: 16px; }
+  .seg .si { flex: 1; text-align: center; padding: 10px 4px; border-radius: 9px; font-size: 13px; font-weight: 700; color: var(--txt-dim); cursor: pointer; }
+  .seg .si.on { background: var(--accent); color: var(--on-accent); }
+
+  .btn-primary { width: 100%; background: var(--accent); color: var(--on-accent); border: 0; border-radius: 13px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; margin-top: 6px; }
+  .btn-primary:disabled { opacity: .4; }
+  .btn-danger { background: var(--crit); color: #fff; }
+  .btn-ghost { width: 100%; background: transparent; color: var(--txt-dim); border: 0; padding: 13px; font-size: 14px; font-weight: 600; cursor: pointer; }
+
+  .warn { background: var(--crit-bg); border: 1px solid rgba(220,38,38,.35); color: #b42318; border-radius: 12px; padding: 12px; font-size: 13px; margin-bottom: 14px; display: flex; gap: 9px; }
+  .holdbtn { width: 100%; border: 1px solid var(--crit); color: #b42318; background: rgba(220,38,38,.10); border-radius: 13px; padding: 15px; font-size: 15px; font-weight: 800; cursor: pointer; position: relative; overflow: hidden; }
+  .holdbtn span { color: #b42318; }
+  .holdbtn .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--crit); z-index: 0; transition: width .05s linear; }
+  .holdbtn span { position: relative; z-index: 1; }
+
+  /* toast */
+  #toast { position: absolute; left: 16px; right: 16px; bottom: calc(80px + var(--safe-bot)); background: #ffffff; color: var(--txt); border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px; font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow); transform: translateY(140%); transition: transform .3s cubic-bezier(.2,.8,.2,1); z-index: 80; display: flex; align-items: center; gap: 10px; }
+  #toast.show { transform: none; }
+  #toast .ok { color: var(--accent); font-size: 18px; }
+
+  .empty { text-align: center; color: var(--txt-faint); padding: 50px 20px; font-size: 14px; }
+  .empty .big { font-size: 34px; margin-bottom: 10px; }
+
+  .account-row { display: flex; align-items: center; gap: 14px; padding: 15px 4px; border-bottom: 1px solid var(--line-soft); font-size: 15px; font-weight: 600; cursor: pointer; }
+  .account-row .ai { width: 22px; text-align: center; color: var(--txt-dim); }
+  .account-row .chev { margin-left: auto; color: var(--txt-faint); }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #1c7d72); display: grid; place-items: center; font-weight: 800; color: var(--on-accent); font-size: 20px; }
+</style>
+</head>
+<body>
+<div id="phone">
+
+  <!-- TOP BAR -->
+  <div class="topbar" id="topbar">
+    <div class="brand">
+      <svg height="22" viewBox="0 0 250 80" fill="#003c56" xmlns="http://www.w3.org/2000/svg" style="display:block">
+        <path d="M101.19,63.7h11.87a.81.81,0,0,0,.67-1.27L103.36,47.62a.48.48,0,0,1,.19-.71,14.29,14.29,0,0,0,5.79-4.8,15.26,15.26,0,0,0,2.43-8.85v-1a15.71,15.71,0,0,0-2.4-8.91,14.83,14.83,0,0,0-6.86-5.44A27.77,27.77,0,0,0,91.88,16H73.07a.81.81,0,0,0-.81.81V62.9a.8.8,0,0,0,.81.8H83.5a.81.81,0,0,0,.81-.8V50a.81.81,0,0,1,.81-.81h5.61a.79.79,0,0,1,.67.36l9.12,13.78A.79.79,0,0,0,101.19,63.7ZM84.31,27a.81.81,0,0,1,.81-.81H92.6a7.67,7.67,0,0,1,3.69.84,6,6,0,0,1,2.43,2.4,7.46,7.46,0,0,1,.87,3.69,7.33,7.33,0,0,1-.87,3.63,6.07,6.07,0,0,1-2.43,2.39,7.68,7.68,0,0,1-3.69.85H85.12a.81.81,0,0,1-.81-.81Z"/>
+        <path d="M158.11,16.42a.81.81,0,0,0-.75.52l-9.8,23.7a.32.32,0,0,1-.6,0l-9.86-23.7a.81.81,0,0,0-.76-.52H121a.81.81,0,0,0-.81.81V62.9a.8.8,0,0,0,.81.8h9.39a.81.81,0,0,0,.81-.8V31.05a.48.48,0,0,1,.93-.18l9.1,22.8a.8.8,0,0,0,.75.51h9.85a.8.8,0,0,0,.75-.51l9.16-23.09a.48.48,0,0,1,.93.18V62.9a.81.81,0,0,0,.81.8h10.3a.8.8,0,0,0,.81-.8V17.23a.81.81,0,0,0-.81-.81Z"/>
+        <path d="M207.36,65a26.48,26.48,0,0,1-11.27-2.23,23.52,23.52,0,0,1-8-5.9,25.19,25.19,0,0,1-4.73-7.93,24.09,24.09,0,0,1-1.55-8.29V39.22a24.69,24.69,0,0,1,1.61-8.77,23.5,23.5,0,0,1,12.86-13.38,30.32,30.32,0,0,1,22,0,23.49,23.49,0,0,1,8,5.57,24.43,24.43,0,0,1,6.54,16.58v1.43a23.7,23.7,0,0,1-1.59,8.29,25.47,25.47,0,0,1-4.76,7.93,23.52,23.52,0,0,1-8,5.9A26.29,26.29,0,0,1,207.36,65Zm0-11.27a14,14,0,0,0,5.57-1,12,12,0,0,0,4.21-2.91,12.74,12.74,0,0,0,2.66-4.37,15.83,15.83,0,0,0,.91-5.41,16.18,16.18,0,0,0-.94-5.63A12.34,12.34,0,0,0,217.08,30a11.84,11.84,0,0,0-4.21-2.79,14.86,14.86,0,0,0-5.51-1,15,15,0,0,0-5.57,1A11.84,11.84,0,0,0,197.58,30a12,12,0,0,0-2.65,4.34A16.42,16.42,0,0,0,194,40a15.59,15.59,0,0,0,.91,5.41,12.72,12.72,0,0,0,2.65,4.37,12.13,12.13,0,0,0,4.21,2.91A14.08,14.08,0,0,0,207.36,53.73Z"/>
+        <path d="M50.69,16.42H32.57a.8.8,0,0,0-.77.57L17.16,62.65a.8.8,0,0,0,.77,1.05h47.9a.81.81,0,0,0,.77-1.06L51.46,17A.82.82,0,0,0,50.69,16.42ZM32.19,52.81l8-26.1a.8.8,0,0,1,.77-.57h1.23a.8.8,0,0,1,.77.57l8.18,26.1a.81.81,0,0,1-.77,1H33A.81.81,0,0,1,32.19,52.81Z"/>
+      </svg>
+    </div>
+    <div class="tenant" onclick="openSheet('tenant')"><span id="tenantName">prod-tenant</span> ▾</div>
+    <div class="iconbtn" onclick="goTab('incidents'); setTimeout(()=>document.getElementById('searchInput').focus(),200)">🔍</div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- OVERVIEW -->
+    <div class="screen active" id="screen-overview"></div>
+
+    <!-- INCIDENTS -->
+    <div class="screen" id="screen-incidents"></div>
+
+    <!-- ACTIVITY -->
+    <div class="screen" id="screen-activity"></div>
+
+    <!-- ACCOUNT -->
+    <div class="screen" id="screen-account"></div>
+
+  </div>
+
+  <!-- DETAIL (push screen) -->
+  <div id="detail">
+    <div class="dt-bar">
+      <div class="back" onclick="closeDetail()">‹</div>
+      <div class="ttl">Incident</div>
+    </div>
+    <div class="dt-body" id="detailBody"></div>
+    <div class="actionbar">
+      <div class="ab" onclick="openSheet('status')"><span class="ic">🔄</span>Status</div>
+      <div class="ab" onclick="openSheet('reclassify')"><span class="ic">🏷️</span>Classify</div>
+      <div class="ab" onclick="openSheet('respond')"><span class="ic">🛡️</span>Respond</div>
+      <div class="ab" onclick="openSheet('ticket')"><span class="ic">🎫</span>Ticket</div>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab active" data-tab="overview" onclick="goTab('overview')"><span class="ti">▦</span>Overview</div>
+    <div class="tab" data-tab="incidents" onclick="goTab('incidents')"><span class="ti">⚠</span>Incidents</div>
+    <div class="tab" data-tab="activity" onclick="goTab('activity')"><span class="ti">🕑</span>Activity</div>
+    <div class="tab" data-tab="account" onclick="goTab('account')"><span class="ti">◉</span>Account</div>
+  </div>
+
+  <!-- SCRIM + SHEETS -->
+  <div id="scrim" onclick="closeSheet()"></div>
+  <div class="sheet" id="sheet"></div>
+
+  <!-- TOAST -->
+  <div id="toast"><span class="ok">✓</span><span id="toastMsg"></span></div>
+
+</div>
+
+<script>
+/* =========================================================================
+   MOCK DATA — modelled on the real ARMO runtime-incidents API
+   (severity / status / classification / response vocabularies match the app)
+   ========================================================================= */
+const SEV_ORDER = ["Critical","High","Medium","Low","Negligible","Unknown"];
+const SEV_COLOR = { Critical:"var(--crit)", High:"var(--high)", Medium:"var(--med)", Low:"var(--low)", Negligible:"var(--negl)", Unknown:"var(--unk)" };
+const CLASS_LABEL = {
+  ActiveThreat:"Active threat", UnsuccessfulAttack:"Unsuccessful attack",
+  ReviewRequired:"Review required", Informational:"Informational",
+  Analyzing:"Analyzing", ClassificationUnavailable:"Unavailable"
+};
+
+let incidents = [
+  {
+    guid:"i1", name:"Reverse shell detected", severity:"Critical", status:"Open",
+    classification:"ActiveThreat", mitre:"Execution (TA0002)", alertType:"Rule",
+    cluster:"cluster-eu-1", namespace:"prod", workload:"payments-api", workloadKind:"Deployment",
+    pod:"payments-api-7c9d-x2k", container:"app", node:"ip-10-2-31-4", image:"payments-api:1.8.2",
+    pid:34122, rule:"Unexpected shell spawned from application process and connected outbound",
+    ts:2, lastSeen:1, response:"Pause", ticket:"JIRA-1423",
+    reasoning:"Process /bin/sh spawned by the Java app PID and immediately established a TCP connection to an unrecognized external IP — a strong reverse-shell pattern.",
+    story:"At 14:32 UTC the workload payments-api spawned an interactive shell (/bin/sh) directly from the JVM process. Within 200ms the shell opened an outbound TCP connection to 185.220.101.42:4444 — an address with no prior history in this cluster. The shell then executed `whoami` and `cat /etc/passwd`, consistent with post-exploitation reconnaissance. No matching behavior exists in the workload's learned profile.",
+    events:[
+      {t:"14:32:01", title:"Process exec: /bin/sh", det:"pid: 34122\nppid: 34001 (java)\nargs: -i\nuser: root (uid 0)"},
+      {t:"14:32:01", title:"Outbound connection", det:"dst: 185.220.101.42:4444\nproto: TCP\nbytes_out: 1284"},
+      {t:"14:32:03", title:"Process exec: whoami", det:"pid: 34140\nppid: 34122 (sh)"},
+      {t:"14:32:04", title:"Sensitive file read: /etc/passwd", det:"path: /etc/passwd\noperation: open(O_RDONLY)"}
+    ],
+    audit:[
+      {a:"Pause container", e:"Applied", by:"shauli@armosec.io", who:"User", time:"14:35:10", ok:true},
+      {a:"Pause container", e:"Initiated", by:"shauli@armosec.io", who:"User", time:"14:35:08", ok:true}
+    ],
+    proc:["systemd","└─ java -jar app.jar (34001)","   └─ /bin/sh -i (34122)  ◀ malicious","      ├─ whoami (34140)","      └─ cat /etc/passwd (34155)"]
+  },
+  {
+    guid:"i2", name:"Cryptocurrency miner execution", severity:"Critical", status:"Open",
+    classification:"ActiveThreat", mitre:"Impact (TA0040)", alertType:"Rule",
+    cluster:"cluster-us-1", namespace:"prod", workload:"batch-worker", workloadKind:"Deployment",
+    pod:"batch-worker-559f-aa1", container:"worker", node:"ip-10-4-12-9", image:"batch-worker:3.1",
+    pid:9921, rule:"Known crypto-mining binary signature + sustained high CPU",
+    ts:11, lastSeen:3, response:null, ticket:null,
+    reasoning:"Binary 'xmrig' detected by signature; process pinned 4 cores at 100% and connected to a known mining pool domain.",
+    story:"A process named xmrig was executed inside batch-worker and immediately consumed all available CPU. It resolved and connected to pool.minexmr.com:4444 (a Monero mining pool). The binary was downloaded to /tmp at 03:11 UTC via curl from a pastebin URL minutes earlier.",
+    events:[
+      {t:"03:11:40", title:"File download to /tmp/xmrig", det:"src: https://pastebin.../raw/x9\nsize: 6.2MB"},
+      {t:"03:12:02", title:"Process exec: /tmp/xmrig", det:"pid: 9921\nargs: -o pool.minexmr.com:4444 -u 4xK..."},
+      {t:"03:12:05", title:"Outbound connection", det:"dst: pool.minexmr.com:4444\nproto: TCP"}
+    ],
+    audit:[], proc:["containerd-shim","└─ /entrypoint.sh","   └─ curl ... (9910)","   └─ /tmp/xmrig (9921)  ◀ miner"]
+  },
+  {
+    guid:"i3", name:"Suspicious binary execution", severity:"High", status:"Investigating",
+    classification:"ReviewRequired", mitre:"Defense Evasion (TA0005)", alertType:"Rule",
+    cluster:"cluster-eu-1", namespace:"staging", workload:"api-gateway", workloadKind:"Deployment",
+    pod:"api-gateway-88f-zz", container:"gateway", node:"ip-10-2-9-1", image:"api-gateway:2.0",
+    pid:5012, rule:"Execution of binary from world-writable directory",
+    ts:42, lastSeen:30, response:null, ticket:"JIRA-1390",
+    reasoning:"A binary executed from /tmp which is unusual for this workload, but no outbound C2 or known-bad signature was observed. Requires human review.",
+    story:"The api-gateway container executed a binary located in /tmp/healthcheck. While unusual, the binary made only localhost calls and exited cleanly. This may be a developer-introduced debug tool rather than a threat.",
+    events:[{t:"09:02:11", title:"Process exec: /tmp/healthcheck", det:"pid: 5012\nuser: appuser (uid 1000)"}],
+    audit:[{a:"Status → Investigating", e:"Applied", by:"dana@armosec.io", who:"User", time:"09:20:00", ok:true}],
+    proc:["└─ gateway (4001)","   └─ /tmp/healthcheck (5012)  ◀ review"]
+  },
+  {
+    guid:"i4", name:"Unexpected outbound connection", severity:"High", status:"Open",
+    classification:"UnsuccessfulAttack", mitre:"Command & Control (TA0011)", alertType:"Network",
+    cluster:"cluster-us-1", namespace:"prod", workload:"web-frontend", workloadKind:"Deployment",
+    pod:"web-frontend-6b-qd", container:"nginx", node:"ip-10-4-2-2", image:"nginx:1.25",
+    pid:0, rule:"Connection attempt to known-malicious IP (blocked by network policy)",
+    ts:65, lastSeen:65, response:"ApplyNetworkPolicy", ticket:null,
+    reasoning:"Outbound attempt to a flagged C2 IP was blocked by an enforced network policy. Attack did not succeed.",
+    story:"web-frontend attempted to connect to 91.200.12.7 (flagged C2 infrastructure). The active network policy denied egress, so the connection never completed. Likely a probe or a dependency reaching a compromised endpoint.",
+    events:[{t:"22:10:00", title:"Blocked egress", det:"dst: 91.200.12.7:443\nverdict: DENIED (network-policy)"}],
+    audit:[{a:"Apply network policy", e:"Applied", by:"auto-policy", who:"Policy", time:"22:10:00", ok:true}],
+    proc:["└─ nginx (1)"]
+  },
+  {
+    guid:"i5", name:"Sensitive file access /etc/shadow", severity:"Medium", status:"Open",
+    classification:"ReviewRequired", mitre:"Credential Access (TA0006)", alertType:"Rule",
+    cluster:"cluster-eu-1", namespace:"prod", workload:"postgres", workloadKind:"StatefulSet",
+    pod:"postgres-0", container:"db", node:"ip-10-2-31-7", image:"postgres:15",
+    pid:771, rule:"Read of /etc/shadow by non-system process",
+    ts:120, lastSeen:118, response:null, ticket:null,
+    reasoning:"A read of /etc/shadow occurred. Could be a backup/cron job but is worth confirming.",
+    story:"The postgres container read /etc/shadow. The reading process was a cron-invoked backup script. No exfiltration observed.",
+    events:[{t:"02:00:00", title:"File read: /etc/shadow", det:"pid: 771\nproc: backup.sh"}],
+    audit:[], proc:["└─ cron","   └─ backup.sh (771)"]
+  },
+  {
+    guid:"i6", name:"Malware detected (Mirai variant)", severity:"Critical", status:"Open",
+    classification:"ActiveThreat", mitre:"Execution (TA0002)", alertType:"Malware",
+    cluster:"cluster-us-1", namespace:"prod", workload:"edge-proxy", workloadKind:"DaemonSet",
+    pod:"edge-proxy-jx2", container:"proxy", node:"ip-10-4-1-5", image:"edge-proxy:1.2",
+    pid:6610, rule:"Malware signature match: Mirai.B",
+    ts:7, lastSeen:2, response:null, ticket:null,
+    md5:"d41d8cd98f00b204e9800998ecf8427e", sha256:"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    reasoning:"File matched the Mirai.B malware signature and began scanning the local subnet on telnet ports — classic IoT botnet behavior.",
+    story:"A dropped binary matched the Mirai.B signature. After execution it began scanning 10.4.0.0/16 on ports 23 and 2323, attempting default-credential logins — consistent with Mirai's propagation phase.",
+    events:[
+      {t:"19:40:00", title:"Malware match: Mirai.B", det:"sha256: e3b0c4...b855\npath: /tmp/.x"},
+      {t:"19:40:05", title:"Subnet scan", det:"range: 10.4.0.0/16\nports: 23, 2323"}
+    ],
+    audit:[], proc:["└─ proxy (1)","   └─ /tmp/.x (6610)  ◀ Mirai.B"]
+  },
+  {
+    guid:"i7", name:"Privilege escalation attempt", severity:"High", status:"Open",
+    classification:"ActiveThreat", mitre:"Privilege Escalation (TA0004)", alertType:"Rule",
+    cluster:"cluster-eu-1", namespace:"prod", workload:"auth-service", workloadKind:"Deployment",
+    pod:"auth-service-3f-mn", container:"auth", node:"ip-10-2-5-8", image:"auth-service:4.4",
+    pid:8800, rule:"setuid syscall to root by unprivileged process",
+    ts:18, lastSeen:9, response:null, ticket:null,
+    reasoning:"An unprivileged process invoked setuid(0) and succeeded, gaining root inside the container — abnormal for this workload.",
+    story:"A process running as uid 1000 invoked setuid(0) and gained root, then attempted to modify /etc/sudoers. The escalation succeeded inside the container namespace.",
+    events:[{t:"11:15:00", title:"setuid(0) success", det:"pid: 8800\nfrom uid: 1000 → 0"},{t:"11:15:02", title:"Write: /etc/sudoers", det:"op: write"}],
+    audit:[], proc:["└─ auth (4001)","   └─ exploit (8800)  ◀ escalated to root"]
+  },
+  {
+    guid:"i8", name:"Package manager run in container", severity:"Low", status:"Dismissed",
+    classification:"Informational", mitre:"—", alertType:"Rule",
+    cluster:"cluster-eu-1", namespace:"dev", workload:"sandbox", workloadKind:"Pod",
+    pod:"sandbox-1", container:"main", node:"ip-10-2-2-2", image:"ubuntu:22.04",
+    pid:300, rule:"apt-get executed at runtime",
+    ts:200, lastSeen:200, response:null, ticket:null,
+    reasoning:"apt-get install was run in a dev sandbox — expected developer behavior in this namespace.",
+    story:"A developer ran apt-get install curl in the dev sandbox. This namespace is whitelisted for interactive development.",
+    events:[{t:"16:00:00", title:"Process exec: apt-get", det:"args: install curl"}],
+    audit:[{a:"Reclassified → Informational", e:"Applied", by:"shauli@armosec.io", who:"User", time:"16:05:00", ok:true},{a:"Status → Dismissed", e:"Applied", by:"shauli@armosec.io", who:"User", time:"16:05:01", ok:true}],
+    proc:["└─ bash (200)","   └─ apt-get install curl"]
+  },
+  {
+    guid:"i9", name:"AWS root login from new geo", severity:"Critical", status:"Open",
+    classification:"ActiveThreat", mitre:"Initial Access (TA0001)", alertType:"Cdr",
+    cluster:null, namespace:null, workload:null, workloadKind:null,
+    cloud:{provider:"AWS", account:"4471-2203-9981", region:"eu-central-1", instance:"—", host:"console.aws"},
+    pid:0, rule:"Root account console login from previously-unseen country",
+    ts:25, lastSeen:25, response:null, ticket:null,
+    reasoning:"AWS root user logged in from an IP geolocated to a country never associated with this account, without MFA challenge logged.",
+    story:"The AWS root account authenticated to the console from 102.89.x.x (geo: Nigeria). This account normally logs in only from Germany. No MFA event was recorded. CloudTrail shows subsequent IAM policy enumeration.",
+    events:[{t:"05:22:00", title:"ConsoleLogin (root)", det:"sourceIP: 102.89.x.x\ngeo: NG\nmfa: false"},{t:"05:23:10", title:"ListPolicies", det:"service: iam"}],
+    audit:[], proc:[]
+  },
+  {
+    guid:"i10", name:"Port scan originating from pod", severity:"Medium", status:"Open",
+    classification:"UnsuccessfulAttack", mitre:"Discovery (TA0007)", alertType:"Network",
+    cluster:"cluster-us-1", namespace:"staging", workload:"loadtest", workloadKind:"Job",
+    pod:"loadtest-x9", container:"runner", node:"ip-10-4-7-3", image:"loadtest:1.0",
+    pid:1200, rule:"Horizontal port scan across namespace detected",
+    ts:90, lastSeen:88, response:null, ticket:null,
+    reasoning:"A pod connected to many peers on sequential ports within seconds. Could be a misconfigured load test rather than recon.",
+    story:"loadtest opened connections to 40+ pods on ascending ports in under 10 seconds. Pattern resembles scanning, but the workload is a known load-testing Job; likely misconfiguration.",
+    events:[{t:"13:00:00", title:"Fan-out connections", det:"targets: 41\nports: 8000-8040"}],
+    audit:[], proc:["└─ runner (1200)"]
+  },
+  {
+    guid:"i11", name:"Anomalous Kubernetes API call", severity:"High", status:"Investigating",
+    classification:"ReviewRequired", mitre:"Discovery (TA0007)", alertType:"Admission",
+    cluster:"cluster-eu-1", namespace:"kube-system", workload:"sa-token", workloadKind:"Pod",
+    pod:"sa-token-7", container:"main", node:"ip-10-2-1-1", image:"alpine:3.19",
+    pid:410, rule:"Pod service account listed secrets cluster-wide",
+    ts:55, lastSeen:40, response:null, ticket:null,
+    reasoning:"A pod's service account enumerated secrets across all namespaces — far broader than its normal scope.",
+    story:"The service account for sa-token issued a `list secrets` call across all namespaces via the K8s API. This is well outside its historical access pattern and may indicate a compromised token.",
+    events:[{t:"10:00:00", title:"GET /api/v1/secrets (all-ns)", det:"verb: list\nsa: sa-token\nresult: 200 (312 secrets)"}],
+    audit:[{a:"Status → Investigating", e:"Applied", by:"dana@armosec.io", who:"User", time:"10:12:00", ok:true}],
+    proc:["└─ main (410)"]
+  },
+  {
+    guid:"i12", name:"New process anomaly in workload", severity:"Medium", status:"Open",
+    classification:"Informational", mitre:"—", alertType:"Rule",
+    cluster:"cluster-us-1", namespace:"dev", workload:"feature-x", workloadKind:"Deployment",
+    pod:"feature-x-22", container:"app", node:"ip-10-4-4-4", image:"feature-x:0.9",
+    pid:2200, rule:"Process not seen during learning period",
+    ts:150, lastSeen:140, response:null, ticket:null, learning:true,
+    reasoning:"A new process appeared that wasn't seen during the workload's learning period. Workload is still in learning mode, so confidence is low.",
+    story:"feature-x executed 'node migrate.js', a process not observed during the learning window. The workload's profile is still in its learning period, so this is informational.",
+    events:[{t:"08:30:00", title:"Process exec: node migrate.js", det:"pid: 2200"}],
+    audit:[], proc:["└─ app (2001)","   └─ node migrate.js (2200)"]
+  }
+];
+
+/* trend (last 14 days): new vs resolved */
+const trendNew =      [3,5,2,6,4,8,5,7,9,6,4,7,11,8];
+const trendResolved = [2,3,3,4,2,5,4,5,6,5,3,6,7,6];
+
+/* ============================ STATE ============================ */
+const state = {
+  tab: "overview",
+  current: null,        // current incident guid in detail
+  search: "",
+  groupBy: "none",      // none | cluster | namespace | workload | threat
+  filters: { status:["Open","Investigating"], severity:[], classification:[] },
+  quick: "all",         // all | crit | active | 24h
+  sheet: null
+};
+
+const relTime = (m) => m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m/60)}h ago` : `${Math.floor(m/1440)}d ago`;
+const $ = (id) => document.getElementById(id);
+const get = (g) => incidents.find(i => i.guid === g);
+function resLabel(i){ return i.cluster ? `${i.namespace} / ${i.workload}` : (i.cloud ? `${i.cloud.provider} · ${i.cloud.account}` : "—"); }
+function locLabel(i){ return i.cluster || (i.cloud ? i.cloud.region : "—"); }
+
+/* ============================ FILTERING ============================ */
+function filtered(){
+  let list = incidents.slice();
+  // quick filter
+  if (state.quick === "crit") list = list.filter(i => i.severity==="Critical" || i.severity==="High");
+  if (state.quick === "active") list = list.filter(i => i.classification==="ActiveThreat");
+  if (state.quick === "24h") list = list.filter(i => i.ts <= 1440);
+  // status/severity/classification filters
+  if (state.filters.status.length) list = list.filter(i => state.filters.status.includes(i.status));
+  if (state.filters.severity.length) list = list.filter(i => state.filters.severity.includes(i.severity));
+  if (state.filters.classification.length) list = list.filter(i => state.filters.classification.includes(i.classification));
+  // search
+  if (state.search.trim()){
+    const q = state.search.toLowerCase();
+    list = list.filter(i => (i.name + (i.cluster||"") + (i.namespace||"") + (i.workload||"") + i.classification).toLowerCase().includes(q));
+  }
+  // sort: severity then recency
+  list.sort((a,b)=> SEV_ORDER.indexOf(a.severity)-SEV_ORDER.indexOf(b.severity) || a.ts-b.ts);
+  return list;
+}
+function activeFilterCount(){ return state.filters.status.length + state.filters.severity.length + state.filters.classification.length; }
+
+/* ============================ RENDER: OVERVIEW ============================ */
+function renderOverview(){
+  const open = incidents.filter(i => i.status==="Open" || i.status==="Investigating");
+  const counts = {}; SEV_ORDER.forEach(s=>counts[s]=0);
+  open.forEach(i=>counts[i.severity]++);
+  const total = open.length;
+  const segs = SEV_ORDER.filter(s=>counts[s]>0).map(s=>`<span style="flex:${counts[s]};background:${SEV_COLOR[s]}"></span>`).join("");
+  const legend = SEV_ORDER.filter(s=>counts[s]>0).map(s=>`<div class="it"><i style="background:${SEV_COLOR[s]}"></i>${counts[s]} ${s}</div>`).join("");
+
+  const attn = open.filter(i => (i.classification==="ActiveThreat"||i.classification==="ReviewRequired") && i.status==="Open");
+
+  // top threats
+  const byName = {}; open.forEach(i=>byName[i.name]=(byName[i.name]||0)+1);
+  const topThreats = Object.entries(byName).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const maxThreat = Math.max(...topThreats.map(t=>t[1]),1);
+
+  // hotspots by cluster
+  const byCluster = {}; open.forEach(i=>{ const c=i.cluster||(i.cloud?i.cloud.provider:"cloud"); byCluster[c]=(byCluster[c]||0)+1; });
+  const hotspots = Object.entries(byCluster).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  const maxHot = Math.max(...hotspots.map(t=>t[1]),1);
+
+  $("screen-overview").innerHTML = `
+    <div class="refresh-row">
+      <span class="upd">Updated just now · last 7 days</span>
+      <span class="ref" onclick="pullRefresh()">↻ Refresh</span>
+    </div>
+
+    <div class="card tap" onclick="goTab('incidents')">
+      <div class="headline"><span class="num">${total}</span><span class="lbl">open incidents</span></div>
+      <div class="sevbar">${segs}</div>
+      <div class="sevlegend">${legend}</div>
+    </div>
+
+    <div class="card tap" onclick="applyQuick('active')">
+      <div class="attn">
+        <div class="big">${attn.length}</div>
+        <div class="meta">
+          <div class="t">Need attention</div>
+          <div class="s">Active threats &amp; review-required, still open</div>
+        </div>
+        <div class="card-head"><span class="chev">›</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h3>Trend · new vs resolved (14d)</h3></div>
+      ${sparkline()}
+      <div class="trend-legend"><span><i style="background:var(--crit)"></i>New</span><span><i style="background:var(--accent)"></i>Resolved</span></div>
+    </div>
+
+    <div class="section-label">Top threats</div>
+    <div class="card tap" onclick="goTab('incidents')">
+      ${topThreats.map(([n,c])=>`
+        <div class="rank">
+          <div class="nm">${n}</div>
+          <div class="barwrap"><span style="width:${c/maxThreat*100}%"></span></div>
+          <div class="ct">${c}</div>
+        </div>`).join("")}
+    </div>
+
+    <div class="section-label">Hotspots · clusters</div>
+    <div class="card tap" onclick="goTab('incidents')">
+      ${hotspots.map(([n,c])=>`
+        <div class="rank">
+          <div class="nm">${n}</div>
+          <div class="barwrap"><span style="width:${c/maxHot*100}%"></span></div>
+          <div class="ct">${c}</div>
+        </div>`).join("")}
+    </div>
+
+    <div class="section-label">Coverage</div>
+    <div class="card">
+      <div class="coverage"><span class="ok">✓ 6 / 6 clusters monitored</span></div>
+      <div class="coverage" style="margin-top:8px"><span class="txt">312 workloads · 48 hosts · 3 cloud accounts</span></div>
+    </div>
+  `;
+}
+
+function sparkline(){
+  const W=360, H=64, n=trendNew.length, max=Math.max(...trendNew,...trendResolved);
+  const pts = (arr)=> arr.map((v,idx)=>`${(idx/(n-1))*W},${H-(v/max)*(H-8)-4}`).join(" ");
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <polyline fill="none" stroke="var(--crit)" stroke-width="2.5" points="${pts(trendNew)}"/>
+    <polyline fill="none" stroke="var(--accent)" stroke-width="2.5" points="${pts(trendResolved)}"/>
+  </svg>`;
+}
+
+/* ============================ RENDER: INCIDENTS FEED ============================ */
+function renderIncidents(){
+  const list = filtered();
+  const groupSel = (g)=> state.groupBy===g ? "on":"";
+  let body = "";
+
+  if (state.groupBy === "none"){
+    body = list.length ? list.map(incCard).join("") : emptyState();
+  } else {
+    const key = state.groupBy;
+    const groups = {};
+    list.forEach(i=>{
+      let k;
+      if (key==="threat") k=i.name;
+      else k = (i[key]) || (i.cloud? "cloud":"—");
+      (groups[k]=groups[k]||[]).push(i);
+    });
+    const keys = Object.keys(groups).sort((a,b)=>groups[b].length-groups[a].length);
+    body = keys.length ? keys.map(k=>`
+      <div class="group-hdr"><span class="gname">${k}</span><span class="gcount">${groups[k].length}</span><span class="line"></span></div>
+      ${groups[k].map(incCard).join("")}
+    `).join("") : emptyState();
+  }
+
+  $("screen-incidents").innerHTML = `
+    <div class="toolbar">
+      <div class="search">🔍<input id="searchInput" placeholder="Search incidents…" value="${state.search}" oninput="onSearch(this.value)"/></div>
+      <div class="pillbtn ${activeFilterCount()?'on':''}" onclick="openSheet('filters')">⚙ ${activeFilterCount()?`<span class="badge">${activeFilterCount()}</span>`:''}</div>
+    </div>
+    <div class="quickfilters">
+      <div class="chip ${state.quick==='all'?'on':''}" onclick="applyQuick('all')">All</div>
+      <div class="chip ${state.quick==='crit'?'on':''}" onclick="applyQuick('crit')">Critical &amp; High</div>
+      <div class="chip ${state.quick==='active'?'on':''}" onclick="applyQuick('active')">Active threats</div>
+      <div class="chip ${state.quick==='24h'?'on':''}" onclick="applyQuick('24h')">Last 24h</div>
+    </div>
+    <div class="quickfilters">
+      <div class="chip ${groupSel('none')}" onclick="setGroup('none')">No grouping</div>
+      <div class="chip ${groupSel('cluster')}" onclick="setGroup('cluster')">By cluster</div>
+      <div class="chip ${groupSel('namespace')}" onclick="setGroup('namespace')">By namespace</div>
+      <div class="chip ${groupSel('workload')}" onclick="setGroup('workload')">By workload</div>
+      <div class="chip ${groupSel('threat')}" onclick="setGroup('threat')">By threat</div>
+    </div>
+    <div class="refresh-row"><span class="upd">${list.length} incident${list.length!==1?'s':''}</span><span class="ref" onclick="pullRefresh()">↻ Refresh</span></div>
+    ${body}
+  `;
+  // keep focus if typing
+  if (document.activeElement && document.activeElement.id==="searchInput"){}
+}
+
+function incCard(i){
+  return `<div class="inc s-${i.severity}" onclick="openDetail('${i.guid}')">
+    <div class="inc-top">
+      <span class="sev-chip sev-${i.severity}">${i.severity.slice(0,4)}</span>
+      <span class="inc-name">${i.name}</span>
+      <span class="inc-time">${relTime(i.ts)}</span>
+    </div>
+    <div class="inc-mid">
+      <span class="clsf cl-${i.classification}">${CLASS_LABEL[i.classification]}</span>
+      <span class="status-tag">${i.status}</span>
+      ${i.learning?'<span class="status-tag">learning</span>':''}
+    </div>
+    <div class="inc-res">${resLabel(i)} <span class="sep">·</span> ${locLabel(i)}</div>
+    ${(i.response||i.ticket)?`<div class="inc-foot">
+      ${i.response?`<span class="tag resp">⚙ ${i.response} applied</span>`:''}
+      ${i.ticket?`<span class="tag">🎫 ${i.ticket}</span>`:''}
+    </div>`:''}
+  </div>`;
+}
+function emptyState(){ return `<div class="empty"><div class="big">✓</div>No incidents match these filters.</div>`; }
+
+/* ============================ RENDER: ACTIVITY ============================ */
+function renderActivity(){
+  // flatten all audit entries
+  const acts = [];
+  incidents.forEach(i => (i.audit||[]).forEach(a => acts.push({...a, inc:i})));
+  acts.sort((a,b)=> (a.time<b.time?1:-1));
+  $("screen-activity").innerHTML = `
+    <div class="section-label">Your recent actions</div>
+    <div class="card">
+      <div class="timeline">
+        ${acts.length ? acts.map(a=>`
+          <div class="tl">
+            <div class="dotcol"><div class="tdot ${a.ok?'':'fail'}"></div><div class="tline"></div></div>
+            <div class="tc" onclick="openDetail('${a.inc.guid}')" style="cursor:pointer">
+              <div class="ta">${a.a}</div>
+              <div class="tm">${a.inc.name} · ${resLabel(a.inc)}</div>
+              <div class="tt">${a.e} · ${a.by} · ${a.time}</div>
+            </div>
+          </div>`).join("") : '<div class="empty">No activity yet.</div>'}
+      </div>
+    </div>
+    <div class="section-label">Notifications</div>
+    <div class="card"><div class="coverage"><span class="txt">🔔 Push alerts arrive in a later release. You'll be able to set thresholds (e.g. Critical &amp; Active threats only).</span></div></div>
+  `;
+}
+
+/* ============================ RENDER: ACCOUNT ============================ */
+function renderAccount(){
+  $("screen-account").innerHTML = `
+    <div class="card" style="display:flex;align-items:center;gap:14px">
+      <div class="avatar">S</div>
+      <div><div style="font-weight:700;font-size:16px">shauli@armosec.io</div><div style="color:var(--txt-dim);font-size:13px">SecOps · On-call</div></div>
+    </div>
+    <div class="card" style="padding:4px 16px">
+      <div class="account-row" onclick="openSheet('tenant')"><span class="ai">🏢</span>Tenant<span style="margin-left:auto;color:var(--txt-dim)">${state.tenantName||'prod-tenant'}</span><span class="chev">›</span></div>
+      <div class="account-row" onclick="toast('Notification settings — later release')"><span class="ai">🔔</span>Notifications<span class="chev">›</span></div>
+      <div class="account-row" onclick="toast('Appearance: Dark (default)')"><span class="ai">🌙</span>Appearance<span style="margin-left:auto;color:var(--txt-dim)">Dark</span><span class="chev">›</span></div>
+      <div class="account-row" onclick="toast('Opens api.armosec.io/openapi/v2/swaggerui')"><span class="ai">{ }</span>API docs<span class="chev">›</span></div>
+      <div class="account-row" style="border-bottom:0;color:var(--crit)" onclick="toast('Signed out (demo)')"><span class="ai">⎋</span>Sign out</div>
+    </div>
+    <div class="empty" style="padding:24px">ARMO Mobile · interactive mockup<br/>v0.3 — runtime threats</div>
+  `;
+}
+
+/* ============================ DETAIL ============================ */
+function openDetail(g){
+  state.current = g;
+  const i = get(g);
+  const cloud = i.cloud;
+  $("detailBody").innerHTML = `
+    <div class="dt-head">
+      <div class="dt-badges">
+        <span class="sev-chip sev-${i.severity}">${i.severity}</span>
+        <span class="status-tag">${i.status}</span>
+        <span class="clsf cl-${i.classification}">${CLASS_LABEL[i.classification]}</span>
+      </div>
+      <h1>${i.name}</h1>
+      <div class="dt-seen">First seen ${relTime(i.ts)} · last seen ${relTime(i.lastSeen)}</div>
+      <div class="reasoning"><b>Why this classification:</b> ${i.reasoning}</div>
+    </div>
+
+    <div class="section-label">Affected resource</div>
+    <div class="card">
+      <div class="kv">
+        ${cloud ? `
+          <div class="k">Provider</div><div class="v">${cloud.provider}</div>
+          <div class="k">Account</div><div class="v">${cloud.account}</div>
+          <div class="k">Region</div><div class="v">${cloud.region}</div>
+          <div class="k">Host</div><div class="v">${cloud.host}</div>
+        ` : `
+          <div class="k">Cluster</div><div class="v">${i.cluster}</div>
+          <div class="k">Namespace</div><div class="v">${i.namespace}</div>
+          <div class="k">Workload</div><div class="v">${i.workloadKind} · ${i.workload}</div>
+          <div class="k">Pod</div><div class="v mono">${i.pod}</div>
+          <div class="k">Container</div><div class="v">${i.container}</div>
+          <div class="k">Node</div><div class="v mono">${i.node}</div>
+          <div class="k">Image</div><div class="v mono">${i.image}</div>
+        `}
+      </div>
+    </div>
+
+    <div class="section-label">Attack story <span style="color:var(--accent);text-transform:none;letter-spacing:0">✦ AI</span></div>
+    <div class="card"><div class="story streaming" id="storyBox"></div></div>
+
+    <div class="section-label">Key facts</div>
+    <div class="card">
+      <div class="kv">
+        <div class="k">Rule</div><div class="v">${i.rule}</div>
+        <div class="k">MITRE</div><div class="v">${i.mitre}</div>
+        <div class="k">Alert type</div><div class="v">${i.alertType}</div>
+        ${i.pid?`<div class="k">PID</div><div class="v mono">${i.pid}</div>`:''}
+        ${i.sha256?`<div class="k">SHA-256</div><div class="v mono">${i.sha256.slice(0,32)}…</div>`:''}
+        ${i.response?`<div class="k">Response</div><div class="v" style="color:var(--accent)">${i.response} applied</div>`:''}
+        ${i.ticket?`<div class="k">Ticket</div><div class="v">${i.ticket}</div>`:''}
+      </div>
+    </div>
+
+    <div class="section-label">Events / alerts (${i.events.length})</div>
+    <div class="card">
+      ${i.events.map((e,idx)=>`
+        <div class="event" id="ev-${idx}" onclick="this.classList.toggle('open')">
+          <div class="eh"><span class="et">${e.title}</span><span class="etime">${e.t}</span></div>
+          <div class="edet">${e.det}</div>
+        </div>`).join("")}
+    </div>
+
+    ${i.proc.length?`
+    <div class="section-label">Process tree</div>
+    <div class="card"><div class="proc">${i.proc.map(l=>l.includes('◀')?`<div class="hl">${l}</div>`:`<div>${l}</div>`).join("")}</div></div>`:''}
+
+    <div class="section-label">Response audit</div>
+    <div class="card">
+      ${i.audit.length ? `<div class="timeline">${i.audit.map((a,idx)=>`
+        <div class="tl">
+          <div class="dotcol"><div class="tdot ${a.ok?'':'fail'}"></div><div class="tline"></div></div>
+          <div class="tc"><div class="ta">${a.a}</div><div class="tm">${a.e} · ${a.who}: ${a.by}</div><div class="tt">${a.time}</div></div>
+        </div>`).join("")}</div>` : '<div style="color:var(--txt-faint);font-size:13px">No response actions taken yet.</div>'}
+    </div>
+  `;
+  $("detail").classList.add("open");
+  streamStory(i.story);
+}
+function closeDetail(){ $("detail").classList.remove("open"); state.current=null; }
+
+let storyTimer=null;
+function streamStory(text){
+  const box = $("storyBox"); if(!box) return;
+  clearInterval(storyTimer);
+  const words = text.split(" "); let n=0; box.textContent="";
+  storyTimer = setInterval(()=>{
+    if(n>=words.length){ clearInterval(storyTimer); box.classList.remove("streaming"); return; }
+    box.textContent += (n?" ":"") + words[n++];
+  }, 28);
+}
+
+/* ============================ SHEETS ============================ */
+function openSheet(type){
+  state.sheet = type;
+  const i = get(state.current);
+  let html = "";
+
+  if (type==="tenant"){
+    const tenants = ["prod-tenant","staging-tenant","eu-customer-01","acme-corp"];
+    html = `<div class="grab"></div><h2>Switch tenant</h2><div class="sub">Scopes the whole app to one customer.</div>
+      ${tenants.map(t=>`<div class="opt ${ (state.tenantName||'prod-tenant')===t?'sel':''}" onclick="pickTenant('${t}')">
+        <div class="ol"><div class="on">${t}</div></div><div class="chk">✓</div></div>`).join("")}`;
+  }
+
+  else if (type==="filters"){
+    const grp = (title,key,vals)=>`
+      <div class="section-label" style="margin-left:0">${title}</div>
+      ${vals.map(v=>`<div class="opt ${state.filters[key].includes(v)?'sel':''}" onclick="toggleFilter('${key}','${v}')">
+        <div class="ol"><div class="on">${v}</div></div><div class="chk">✓</div></div>`).join("")}`;
+    html = `<div class="grab"></div><h2>Filters</h2><div class="sub">Refine the incident feed.</div>
+      ${grp("Status","status",["Open","Investigating","Dismissed","Resolved"])}
+      ${grp("Severity","severity",["Critical","High","Medium","Low"])}
+      ${grp("Classification","classification",["ActiveThreat","UnsuccessfulAttack","ReviewRequired","Informational"])}
+      <button class="btn-primary" onclick="closeSheet()">Show results</button>
+      <button class="btn-ghost" onclick="clearFilters()">Clear all</button>`;
+  }
+
+  else if (type==="status"){
+    html = `<div class="grab"></div><h2>Change status</h2><div class="sub">${i.name}</div>
+      <div class="seg" id="statusSeg">
+        ${["Open","Investigating","Dismissed","Resolved"].map(s=>`<div class="si ${i.status===s?'on':''}" data-s="${s}" onclick="segPick('statusSeg',this)">${s}</div>`).join("")}
+      </div>
+      <button class="btn-primary" onclick="applyStatus()">Apply</button>
+      <button class="btn-ghost" onclick="closeSheet()">Cancel</button>`;
+  }
+
+  else if (type==="reclassify"){
+    const classes = [
+      ["ActiveThreat","Active threat","Confirmed malicious activity","var(--crit)"],
+      ["UnsuccessfulAttack","Unsuccessful attack","Detected & blocked","var(--high)"],
+      ["ReviewRequired","Review required","Unusual, needs review","var(--med)"],
+      ["Informational","Informational","Observed but safe","var(--low)"]
+    ];
+    const reasons = ["FalsePositive","ConfirmedAttack","ExpectedOperationalBehavior","BenignAnomaly","TestingOrSimulation","Other"];
+    html = `<div class="grab"></div><h2>Reclassify</h2><div class="sub">${i.name}</div>
+      <div class="section-label" style="margin-left:0">New classification</div>
+      <div id="clsList">
+      ${classes.map(c=>`<div class="opt ${i.classification===c[0]?'sel':''}" data-c="${c[0]}" onclick="pickOne('clsList',this)">
+        <div class="od" style="background:${c[3]}"></div><div class="ol"><div class="on">${c[1]}</div><div class="os">${c[2]}</div></div><div class="chk">✓</div></div>`).join("")}
+      </div>
+      <div class="section-label" style="margin-left:0">Reason</div>
+      <select class="txtin" id="reclassReason" style="margin-bottom:14px">${reasons.map(r=>`<option>${r}</option>`).join("")}</select>
+      <textarea id="reclassNote" rows="3" placeholder="Add an explanation (optional)…"></textarea>
+      <button class="btn-primary" style="margin-top:14px" onclick="applyReclassify()">Reclassify</button>
+      <button class="btn-ghost" onclick="closeSheet()">Cancel</button>`;
+  }
+
+  else if (type==="respond"){
+    const safe = [
+      ["Pause","Freeze container processes","⏸"],
+      ["Drain","Drain connections gracefully","💧"],
+      ["ApplyNetworkPolicy","Isolate with network policy","🌐"],
+      ["ApplySeccompProfile","Restrict syscalls (seccomp)","🔒"]
+    ];
+    const danger = [["Stop","Graceful container shutdown","⏹"],["Kill","Forcefully kill the process","✖"]];
+    html = `<div class="grab"></div><h2>Respond</h2><div class="sub">${i.name} · ${resLabel(i)}</div>
+      <div class="section-label" style="margin-left:0">Contained actions</div>
+      <div id="respList">
+      ${safe.map(a=>`<div class="opt" data-a="${a[0]}" data-danger="0" onclick="pickOne('respList',this)"><div class="ol"><div class="on">${a[2]} ${a[0]}</div><div class="os">${a[1]}</div></div><div class="chk">✓</div></div>`).join("")}
+      <div class="section-label" style="margin-left:0;color:var(--crit)">Destructive — requires hold-to-confirm</div>
+      ${danger.map(a=>`<div class="opt" data-a="${a[0]}" data-danger="1" onclick="pickOne('respList',this)" style="border-color:rgba(220,38,38,.3)"><div class="od" style="background:var(--crit)"></div><div class="ol"><div class="on">${a[2]} ${a[0]}</div><div class="os">${a[1]}</div></div><div class="chk">✓</div></div>`).join("")}
+      </div>
+      <div id="respConfirm"></div>`;
+  }
+
+  else if (type==="ticket"){
+    html = `<div class="grab"></div><h2>Create ticket</h2><div class="sub">${i.name}</div>
+      <div class="section-label" style="margin-left:0">System</div>
+      <div class="seg" id="ticketSeg">
+        ${["Jira","Linear","GitHub"].map((s,idx)=>`<div class="si ${idx===0?'on':''}" data-s="${s}" onclick="segPick('ticketSeg',this)">${s}</div>`).join("")}
+      </div>
+      <div class="section-label" style="margin-left:0">Summary</div>
+      <input class="txtin" id="ticketTitle" value="[${i.severity}] ${i.name} in ${resLabel(i)}" style="margin-bottom:14px"/>
+      <textarea id="ticketDesc" rows="4" placeholder="Description…">Runtime incident detected on ${resLabel(i)} (${locLabel(i)}).\nClassification: ${CLASS_LABEL[i.classification]}\nMITRE: ${i.mitre}</textarea>
+      <button class="btn-primary" style="margin-top:14px" onclick="applyTicket()">Create ticket</button>
+      <button class="btn-ghost" onclick="closeSheet()">Cancel</button>`;
+  }
+
+  $("sheet").innerHTML = html;
+  $("sheet").classList.add("open");
+  $("scrim").classList.add("show");
+}
+function closeSheet(){ $("sheet").classList.remove("open"); $("scrim").classList.remove("show"); state.sheet=null; }
+
+/* sheet helpers */
+function segPick(id,el){ $(id).querySelectorAll(".si").forEach(s=>s.classList.remove("on")); el.classList.add("on"); }
+function pickOne(id,el){
+  $(id).querySelectorAll(".opt").forEach(s=>s.classList.remove("sel")); el.classList.add("sel");
+  if(id==="respList"){ renderRespConfirm(el); }
+}
+function renderRespConfirm(el){
+  const action = el.dataset.a, danger = el.dataset.danger==="1";
+  const box = $("respConfirm");
+  if(danger){
+    box.innerHTML = `<div class="warn">⚠ <span><b>${action}</b> affects the running workload and may cause downtime. Hold the button to confirm.</span></div>
+      <button class="holdbtn" id="holdBtn"><span class="fill"></span><span>Hold to ${action}</span></button>`;
+    setupHold($("holdBtn"), ()=>applyRespond(action));
+  } else {
+    box.innerHTML = `<button class="btn-primary" onclick="applyRespond('${action}')">Apply ${action}</button>`;
+  }
+}
+function setupHold(btn, done){
+  let raf, start=null, fired=false; const fill=btn.querySelector(".fill"); const DUR=1100;
+  const begin=(e)=>{ e.preventDefault(); start=performance.now(); fired=false; step(); };
+  const step=()=>{ const p=Math.min((performance.now()-start)/DUR,1); fill.style.width=(p*100)+"%"; if(p>=1&&!fired){fired=true;done();return;} raf=requestAnimationFrame(step); };
+  const end=()=>{ cancelAnimationFrame(raf); if(!fired){fill.style.width="0%";} };
+  btn.addEventListener("mousedown",begin); btn.addEventListener("touchstart",begin,{passive:false});
+  btn.addEventListener("mouseup",end); btn.addEventListener("mouseleave",end); btn.addEventListener("touchend",end);
+}
+
+/* ============================ MUTATIONS (local) ============================ */
+function applyStatus(){
+  const i = get(state.current); const s = $("statusSeg").querySelector(".si.on").dataset.s;
+  i.status = s; pushAudit(i, `Status → ${s}`);
+  closeSheet(); openDetail(i.guid); toast(`Status changed to ${s}`);
+}
+function applyReclassify(){
+  const i = get(state.current); const sel = $("clsList").querySelector(".opt.sel");
+  if(!sel){ toast("Pick a classification"); return; }
+  const c = sel.dataset.c, reason = $("reclassReason").value;
+  i.classification = c; i.wasManuallyReclassified = true;
+  if(reason==="FalsePositive"){ i.status="Dismissed"; i.markedFP=true; }
+  pushAudit(i, `Reclassified → ${CLASS_LABEL[c]} (${reason})`);
+  closeSheet(); openDetail(i.guid); toast(`Reclassified as ${CLASS_LABEL[c]}`);
+}
+function applyRespond(action){
+  const i = get(state.current); i.response = action;
+  pushAudit(i, `${action} ${action==='ApplyNetworkPolicy'||action==='ApplySeccompProfile'?'':'container'}`.trim());
+  closeSheet(); openDetail(i.guid); toast(`${action} applied`);
+}
+function applyTicket(){
+  const i = get(state.current); const sys = $("ticketSeg").querySelector(".si.on").dataset.s;
+  const num = sys.slice(0,3).toUpperCase()+"-"+(1400+Math.floor(Math.random()*99));
+  i.ticket = num; pushAudit(i, `Ticket created · ${num}`);
+  closeSheet(); openDetail(i.guid); toast(`${sys} ticket ${num} created`);
+}
+function pushAudit(i, action){
+  i.audit = i.audit||[];
+  const now = new Date(); const t = now.toTimeString().slice(0,8);
+  i.audit.unshift({a:action, e:"Applied", by:"shauli@armosec.io", who:"User", time:t, ok:true});
+}
+
+/* ============================ NAV / EVENTS ============================ */
+function goTab(t){
+  state.tab = t;
+  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active", x.dataset.tab===t));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $("screen-"+t).classList.add("active");
+  $("content").scrollTop = 0;
+  if(t==="overview") renderOverview();
+  if(t==="incidents") renderIncidents();
+  if(t==="activity") renderActivity();
+  if(t==="account") renderAccount();
+}
+function onSearch(v){ state.search=v; const i=get; renderIncidents(); const el=$("searchInput"); if(el){el.focus(); el.setSelectionRange(v.length,v.length);} }
+function applyQuick(q){ state.quick=q; if(state.tab!=="incidents"){goTab("incidents");} else {renderIncidents();} }
+function setGroup(g){ state.groupBy=g; renderIncidents(); }
+function toggleFilter(key,val){
+  const arr=state.filters[key]; const idx=arr.indexOf(val);
+  if(idx>=0) arr.splice(idx,1); else arr.push(val);
+  openSheet("filters"); // re-render sheet
+}
+function clearFilters(){ state.filters={status:[],severity:[],classification:[]}; closeSheet(); renderIncidents(); }
+function pickTenant(t){ state.tenantName=t; $("tenantName").textContent=t; closeSheet(); toast(`Switched to ${t}`); goTab(state.tab); }
+
+let toastTimer=null;
+function toast(msg){ $("toastMsg").textContent=msg; $("toast").classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2400); }
+function pullRefresh(){ toast("Refreshed · updated just now"); if(state.tab==="overview")renderOverview(); if(state.tab==="incidents")renderIncidents(); }
+
+/* init */
+renderOverview();
+</script>
+</body>
+</html>
