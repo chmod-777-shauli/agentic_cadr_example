@@ -322,8 +322,8 @@
   .holdbtn span { position: relative; z-index: 1; }
 
   /* toast */
-  #toast { position: absolute; left: 16px; right: 16px; bottom: calc(80px + var(--safe-bot)); background: #ffffff; color: var(--txt); border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px; font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow); transform: translateY(140%); transition: transform .3s cubic-bezier(.2,.8,.2,1); z-index: 80; display: flex; align-items: center; gap: 10px; }
-  #toast.show { transform: none; }
+  #toast { position: absolute; left: 16px; right: 16px; bottom: calc(96px + var(--safe-bot)); background: #ffffff; color: var(--txt); border: 1px solid var(--line); border-radius: 13px; padding: 13px 15px; font-size: 13.5px; font-weight: 600; box-shadow: var(--shadow); opacity: 0; visibility: hidden; transform: translateY(12px); transition: opacity .25s ease, transform .25s ease, visibility .25s ease; z-index: 80; display: flex; align-items: center; gap: 10px; }
+  #toast.show { opacity: 1; visibility: visible; transform: none; }
   #toast .ok { color: var(--accent); font-size: 18px; }
 
   .empty { text-align: center; color: var(--txt-faint); padding: 50px 20px; font-size: 14px; }
@@ -628,9 +628,20 @@ function activeFilterCount(){ return state.filters.status.length + state.filters
 /* ============================ RENDER: OVERVIEW ============================ */
 function renderOverview(){
   const open = incidents.filter(i => i.status==="Open" || i.status==="Investigating");
+  const total = open.length;
+
+  // PRIMARY breakdown: by classification
+  const CLASS_ORDER = ["ActiveThreat","UnsuccessfulAttack","ReviewRequired","Informational","Analyzing","ClassificationUnavailable"];
+  const CLASS_COLOR = { ActiveThreat:"var(--crit)", UnsuccessfulAttack:"var(--high)", ReviewRequired:"var(--med)", Informational:"var(--low)", Analyzing:"var(--negl)", ClassificationUnavailable:"var(--negl)" };
+  const CLASS_LEGEND = { ActiveThreat:"Active threats", UnsuccessfulAttack:"Unsuccessful attacks", ReviewRequired:"Review required", Informational:"Informational", Analyzing:"Analyzing", ClassificationUnavailable:"Unclassified" };
+  const cls = {}; CLASS_ORDER.forEach(c=>cls[c]=0);
+  open.forEach(i => { const c = i.classification || "ClassificationUnavailable"; cls[c] = (cls[c]||0)+1; });
+  const clsSegs = CLASS_ORDER.filter(c=>cls[c]>0).map(c=>`<span style="flex:${cls[c]};background:${CLASS_COLOR[c]}"></span>`).join("");
+  const clsLegend = CLASS_ORDER.filter(c=>cls[c]>0).map(c=>`<div class="it"><i style="background:${CLASS_COLOR[c]}"></i>${cls[c]} ${CLASS_LEGEND[c]}</div>`).join("");
+
+  // SECONDARY breakdown: by severity
   const counts = {}; SEV_ORDER.forEach(s=>counts[s]=0);
   open.forEach(i=>counts[i.severity]++);
-  const total = open.length;
   const segs = SEV_ORDER.filter(s=>counts[s]>0).map(s=>`<span style="flex:${counts[s]};background:${SEV_COLOR[s]}"></span>`).join("");
   const legend = SEV_ORDER.filter(s=>counts[s]>0).map(s=>`<div class="it"><i style="background:${SEV_COLOR[s]}"></i>${counts[s]} ${s}</div>`).join("");
 
@@ -654,7 +665,13 @@ function renderOverview(){
 
     <div class="card tap" onclick="goTab('incidents')">
       <div class="headline"><span class="num">${total}</span><span class="lbl">open incidents</span></div>
-      <div class="sevbar">${segs}</div>
+      <div class="sevbar">${clsSegs}</div>
+      <div class="sevlegend">${clsLegend}</div>
+    </div>
+
+    <div class="card tap" onclick="goTab('incidents')">
+      <div class="card-head" style="margin-bottom:10px"><h3>By severity</h3><span class="chev">›</span></div>
+      <div class="sevbar" style="margin:0 0 12px">${segs}</div>
       <div class="sevlegend">${legend}</div>
     </div>
 
