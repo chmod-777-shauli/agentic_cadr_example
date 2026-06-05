@@ -101,14 +101,15 @@ function clsf(c){ return `<span class="chip" style="color:${CLASS_COLOR[c]};back
 
 /* ---------- Inventory ---------- */
 const WORKLOADS = [
-  {name:"payments-api", kind:"Deployment", ns:"payments", cluster:"prod-eu-1", replicas:6, risk:"Critical", cves:31, runtime:true},
-  {name:"auth-service", kind:"Deployment", ns:"auth", cluster:"prod-us-1", replicas:4, risk:"High", cves:16, runtime:true},
-  {name:"web-frontend", kind:"Deployment", ns:"prod", cluster:"prod-us-1", replicas:8, risk:"Medium", cves:22, runtime:true},
-  {name:"edge-proxy", kind:"DaemonSet", ns:"prod", cluster:"prod-us-1", replicas:12, risk:"High", cves:26, runtime:true},
-  {name:"batch-worker", kind:"Deployment", ns:"data", cluster:"staging-eu-1", replicas:3, risk:"Medium", cves:23, runtime:false},
-  {name:"postgres", kind:"StatefulSet", ns:"data", cluster:"prod-eu-1", replicas:3, risk:"Low", cves:22, runtime:true},
-  {name:"redis", kind:"StatefulSet", ns:"data", cluster:"prod-eu-1", replicas:3, risk:"Low", cves:14, runtime:true},
+  {name:"payments-api", kind:"Deployment", ns:"payments", cluster:"prod-eu-1", replicas:6, risk:"Critical", cves:31, runtime:true, riskFactors:["Internet facing","Secret access","Privileged"], status:"Completed"},
+  {name:"auth-service", kind:"Deployment", ns:"auth", cluster:"prod-us-1", replicas:4, risk:"High", cves:16, runtime:true, riskFactors:["External facing","Secret access"], status:"Completed"},
+  {name:"web-frontend", kind:"Deployment", ns:"prod", cluster:"prod-us-1", replicas:8, risk:"Medium", cves:22, runtime:true, riskFactors:["Internet facing"], status:"Learning", learn:64},
+  {name:"edge-proxy", kind:"DaemonSet", ns:"prod", cluster:"prod-us-1", replicas:12, risk:"High", cves:26, runtime:true, riskFactors:["Host access","Privileged"], status:"Partial"},
+  {name:"batch-worker", kind:"Deployment", ns:"data", cluster:"staging-eu-1", replicas:3, risk:"Medium", cves:23, runtime:false, riskFactors:["Data access"], status:"Missing"},
+  {name:"postgres", kind:"StatefulSet", ns:"data", cluster:"prod-eu-1", replicas:3, risk:"Low", cves:22, runtime:true, riskFactors:["Data access","Secret access"], status:"Completed"},
+  {name:"redis", kind:"StatefulSet", ns:"data", cluster:"prod-eu-1", replicas:3, risk:"Low", cves:14, runtime:true, riskFactors:[], status:"Learning", learn:88},
 ];
+const KIND_ABBR = { Deployment:"De", DaemonSet:"DS", StatefulSet:"SS", Pod:"Po", Job:"Jo", CronJob:"CJ", ReplicaSet:"RS" };
 
 /* helper to build a table */
 function table(headers, rows){
