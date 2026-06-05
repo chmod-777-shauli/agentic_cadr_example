@@ -60,23 +60,23 @@ a:hover { text-decoration: underline; }
 /* ---------- sidebar ---------- */
 .sidebar {
   width: var(--sidebar-w); flex: 0 0 var(--sidebar-w);
-  background: linear-gradient(180deg, var(--brand-dark), #0a1850 60%, #0a1645);
-  color: #c9d3ee; position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  background: #ffffff; border-right: 1px solid var(--line);
+  color: #2d3a4d; position: sticky; top: 0; height: 100vh; overflow-y: auto;
   display: flex; flex-direction: column; padding-bottom: 14px;
 }
-.sidebar::-webkit-scrollbar { width: 6px; } .sidebar::-webkit-scrollbar-thumb { background: #2a3b78; border-radius: 4px; }
-.sb-logo { display: flex; align-items: center; gap: 9px; padding: 16px 18px 14px; }
+.sidebar::-webkit-scrollbar { width: 6px; } .sidebar::-webkit-scrollbar-thumb { background: #d3dae6; border-radius: 4px; }
+.sb-logo { display: flex; align-items: center; gap: 9px; padding: 16px 18px 18px; }
 .sb-logo svg { height: 22px; display: block; }
-.sb-logo .wm { color: #fff; font-weight: 800; font-size: 18px; letter-spacing: .5px; }
-.sb-group { margin-top: 12px; }
-.sb-group .sb-cat { font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; color: #6b79ad; padding: 6px 20px; font-weight: 700; }
+.sb-group { margin-top: 10px; }
+.sb-group .sb-cat { font-size: 10.5px; text-transform: uppercase; letter-spacing: 1px; color: #9aa3b2; padding: 8px 20px 4px; font-weight: 700; }
 .sb-item {
-  display: flex; align-items: center; gap: 11px; padding: 9px 20px; color: #c2ccec;
+  display: flex; align-items: center; gap: 11px; padding: 9px 20px; color: #2d3a4d;
   font-size: 13px; font-weight: 500; cursor: pointer; border-left: 3px solid transparent; position: relative;
 }
-.sb-item:hover { background: rgba(255,255,255,.06); color: #fff; text-decoration: none; }
-.sb-item.active { background: rgba(47,109,246,.18); color: #fff; border-left-color: var(--brand-accent); font-weight: 600; }
-.sb-item svg, .sb-item .ic { width: 17px; height: 17px; flex: 0 0 17px; opacity: .9; }
+.sb-item:hover { background: var(--panel-2); color: var(--brand); text-decoration: none; }
+.sb-item.active { background: #e7e9f2; color: var(--brand); border-left-color: var(--brand); font-weight: 600; }
+.sb-item svg, .sb-item .ic { width: 17px; height: 17px; flex: 0 0 17px; color: var(--brand-light); }
+.sb-item.active svg { color: var(--brand); }
 .sb-foot { margin-top: auto; padding: 10px 20px 0; }
 
 /* ---------- topbar ---------- */
