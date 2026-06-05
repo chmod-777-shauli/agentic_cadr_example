@@ -863,7 +863,7 @@ function renderAccount(){
 }
 
 /* ============================ DETAIL ============================ */
-function openDetail(g){
+function _renderDetail(g){
   state.current = g;
   const i = get(g);
   const cloud = i.cloud;
@@ -937,10 +937,11 @@ function openDetail(g){
         </div>`).join("")}</div>` : '<div style="color:var(--txt-faint);font-size:13px">No response actions taken yet.</div>'}
     </div>
   `;
+  $("detail").dataset.guid = g;
   $("detail").classList.add("open");
   streamStory(i.story);
 }
-function closeDetail(){ $("detail").classList.remove("open"); state.current=null; }
+function closeDetail(){ navBack(); }
 
 let storyTimer=null;
 function streamStory(text){
@@ -954,7 +955,7 @@ function streamStory(text){
 }
 
 /* ============================ SHEETS ============================ */
-function openSheet(type){
+function _renderSheet(type){
   state.sheet = type;
   const i = get(state.current);
   let html = "";
@@ -975,7 +976,7 @@ function openSheet(type){
       ${grp("Status","status",["Open","Investigating","Dismissed","Resolved"])}
       ${grp("Severity","severity",["Critical","High","Medium","Low"])}
       ${grp("Classification","classification",["ActiveThreat","UnsuccessfulAttack","ReviewRequired","Informational"])}
-      <button class="btn-primary" onclick="closeSheet()">Show results</button>
+      <button class="btn-primary" onclick="applyFilters()">Show results</button>
       <button class="btn-ghost" onclick="clearFilters()">Clear all</button>`;
   }
 
@@ -1041,10 +1042,11 @@ function openSheet(type){
   }
 
   $("sheet").innerHTML = html;
+  $("sheet").dataset.type = type;
   $("sheet").classList.add("open");
   $("scrim").classList.add("show");
 }
-function closeSheet(){ $("sheet").classList.remove("open"); $("scrim").classList.remove("show"); state.sheet=null; }
+function closeSheet(){ navBack(); }
 
 /* sheet helpers */
 function segPick(id,el){ $(id).querySelectorAll(".si").forEach(s=>s.classList.remove("on")); el.classList.add("on"); }
@@ -1073,10 +1075,11 @@ function setupHold(btn, done){
 }
 
 /* ============================ MUTATIONS (local) ============================ */
+// Apply pattern: mutate → refresh detail in place → toast → navBack() closes the sheet.
 function applyStatus(){
   const i = get(state.current); const s = $("statusSeg").querySelector(".si.on").dataset.s;
   i.status = s; pushAudit(i, `Status → ${s}`);
-  closeSheet(); openDetail(i.guid); toast(`Status changed to ${s}`);
+  _renderDetail(i.guid); toast(`Status changed to ${s}`); navBack();
 }
 function applyReclassify(){
   const i = get(state.current); const sel = $("clsList").querySelector(".opt.sel");
@@ -1085,18 +1088,18 @@ function applyReclassify(){
   i.classification = c; i.wasManuallyReclassified = true;
   if(reason==="FalsePositive"){ i.status="Dismissed"; i.markedFP=true; }
   pushAudit(i, `Reclassified → ${CLASS_LABEL[c]} (${reason})`);
-  closeSheet(); openDetail(i.guid); toast(`Reclassified as ${CLASS_LABEL[c]}`);
+  _renderDetail(i.guid); toast(`Reclassified as ${CLASS_LABEL[c]}`); navBack();
 }
 function applyRespond(action){
   const i = get(state.current); i.response = action;
   pushAudit(i, `${action} ${action==='ApplyNetworkPolicy'||action==='ApplySeccompProfile'?'':'container'}`.trim());
-  closeSheet(); openDetail(i.guid); toast(`${action} applied`);
+  _renderDetail(i.guid); toast(`${action} applied`); navBack();
 }
 function applyTicket(){
   const i = get(state.current); const sys = $("ticketSeg").querySelector(".si.on").dataset.s;
   const num = sys.slice(0,3).toUpperCase()+"-"+(1400+Math.floor(Math.random()*99));
   i.ticket = num; pushAudit(i, `Ticket created · ${num}`);
-  closeSheet(); openDetail(i.guid); toast(`${sys} ticket ${num} created`);
+  _renderDetail(i.guid); toast(`${sys} ticket ${num} created`); navBack();
 }
 function pushAudit(i, action){
   i.audit = i.audit||[];
@@ -1105,33 +1108,72 @@ function pushAudit(i, action){
 }
 
 /* ============================ NAV / EVENTS ============================ */
-function goTab(t){
-  state.tab = t;
-  document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active", x.dataset.tab===t));
-  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
-  $("screen-"+t).classList.add("active");
-  $("content").scrollTop = 0;
+/* -------- History-API navigation: back button always steps back in-app -------- */
+/* Single source of truth = navState; browser history mirrors it; the popstate
+   handler is the ONLY place that reacts to back/forward. Forward actions push;
+   "close/back" actions call history.back() and let popstate reconcile the DOM. */
+let navState = { tab: "overview", detail: null, sheet: null };
+let shownTab = "overview";
+
+function renderTabContent(t){
   if(t==="overview") renderOverview();
-  if(t==="incidents") renderIncidents();
-  if(t==="activity") renderActivity();
-  if(t==="account") renderAccount();
+  else if(t==="incidents") renderIncidents();
+  else if(t==="activity") renderActivity();
+  else if(t==="account") renderAccount();
 }
+
+function applyNav(){
+  state.tab = navState.tab;
+  // tab (re-render only when it actually changed, to preserve scroll on sheet/detail close)
+  if(shownTab !== navState.tab){
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active", x.dataset.tab===navState.tab));
+    document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+    $("screen-"+navState.tab).classList.add("active");
+    $("content").scrollTop = 0;
+    renderTabContent(navState.tab);
+    shownTab = navState.tab;
+  }
+  // detail overlay
+  const dOpen = $("detail").classList.contains("open");
+  if(navState.detail){
+    if(!dOpen || $("detail").dataset.guid !== navState.detail) _renderDetail(navState.detail);
+  } else if(dOpen){ $("detail").classList.remove("open"); state.current=null; }
+  // bottom sheet
+  const sOpen = $("sheet").classList.contains("open");
+  if(navState.sheet){
+    if(!sOpen || $("sheet").dataset.type !== navState.sheet) _renderSheet(navState.sheet);
+  } else if(sOpen){ $("sheet").classList.remove("open"); $("scrim").classList.remove("show"); state.sheet=null; }
+}
+
+function nav(partial){ navState = { ...navState, ...partial }; history.pushState(navState, ""); applyNav(); }
+function navBack(){ history.back(); }
+window.addEventListener("popstate", e=>{
+  navState = e.state ? { ...e.state } : { tab:"overview", detail:null, sheet:null };
+  applyNav();
+});
+
+function goTab(t){ nav({ tab:t, detail:null, sheet:null }); }
+function openDetail(g){ nav({ detail:g, sheet:null }); }
+function openSheet(type){ nav({ sheet:type }); }
+
 function onSearch(v){ state.search=v; const i=get; renderIncidents(); const el=$("searchInput"); if(el){el.focus(); el.setSelectionRange(v.length,v.length);} }
-function applyQuick(q){ state.quick=q; if(state.tab!=="incidents"){goTab("incidents");} else {renderIncidents();} }
+function applyQuick(q){ state.quick=q; if(navState.tab!=="incidents"){goTab("incidents");} else {renderIncidents();} }
 function setGroup(g){ state.groupBy=g; renderIncidents(); }
 function toggleFilter(key,val){
   const arr=state.filters[key]; const idx=arr.indexOf(val);
   if(idx>=0) arr.splice(idx,1); else arr.push(val);
-  openSheet("filters"); // re-render sheet
+  _renderSheet("filters"); // re-render sheet in place (no new history entry)
 }
-function clearFilters(){ state.filters={status:[],severity:[],classification:[]}; closeSheet(); renderIncidents(); }
-function pickTenant(t){ state.tenantName=t; $("tenantName").textContent=t; closeSheet(); toast(`Switched to ${t}`); goTab(state.tab); }
+function applyFilters(){ renderIncidents(); navBack(); }
+function clearFilters(){ state.filters={status:[],severity:[],classification:[]}; renderIncidents(); navBack(); }
+function pickTenant(t){ state.tenantName=t; $("tenantName").textContent=t; toast(`Switched to ${t}`); renderTabContent(navState.tab); navBack(); }
 
 let toastTimer=null;
 function toast(msg){ $("toastMsg").textContent=msg; $("toast").classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>$("toast").classList.remove("show"),2400); }
 function pullRefresh(){ toast("Refreshed · updated just now"); if(state.tab==="overview")renderOverview(); if(state.tab==="incidents")renderIncidents(); }
 
 /* init */
+history.replaceState(navState, "");   // seed the first history entry
 renderOverview();
 </script>
 </body>
