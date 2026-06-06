@@ -33,9 +33,11 @@ const NAV = [
       {k:"attack-path", t:"Attack Path", href:"attack-path.html", icon:"attack"},
       {k:"vulnerabilities", t:"Vulnerabilities", href:"vulnerabilities.html", icon:"vuln"},
       {k:"compliance", t:"Compliance", href:"compliance.html", icon:"compliance"},
+      {k:"rbac", t:"Identities & Roles", href:"rbac.html", icon:"rbac"},
+  ]},
+  { cat:"Prevention", items: [
       {k:"network-policies", t:"Network Policies", href:"network-policies.html", icon:"network"},
       {k:"seccomp", t:"Seccomp Profiles", href:"seccomp.html", icon:"seccomp"},
-      {k:"rbac", t:"RBAC Insights", href:"rbac.html", icon:"rbac"},
   ]},
   { cat:"Threat Detection", items: [ {k:"runtime-incidents", t:"Runtime Incidents", href:"runtime-incidents.html", icon:"threat"} ] },
   { cat:"Code", items: [
@@ -65,27 +67,18 @@ const NAV = [
   document.body.innerHTML = `
     <div class="layout">
       <aside class="sidebar">
-        <div class="sb-logo">${ARMO_LOGO}</div>
+        <div class="sb-logo">${ARMO_LOGO}<div class="sb-sub">POWERED BY KUBESCAPE</div></div>
         <nav>${navHtml}</nav>
         <div class="sb-foot"><a class="sb-item ${page==='settings'?'active':''}" href="settings.html">${ICONS.settings}<span>Settings</span></a></div>
       </aside>
       <div class="main-wrap">
         <header class="topbar">
-          <div class="crumbs">ARMO <span>›</span> <b>${title}</b></div>
           <div class="spacer"></div>
-          <div class="tb-dd">
-            <div class="tb-pill" id="clusterPill" onclick="toggleDD('clusterMenu',event)"><span id="clusterLabel">All clusters</span> ▾</div>
-            <div class="dd-menu" id="clusterMenu"></div>
-          </div>
-          <div class="tb-dd">
-            <div class="tb-pill" id="nsPill" onclick="toggleDD('nsMenu',event)"><span id="nsLabel">All namespaces</span> ▾</div>
-            <div class="dd-menu" id="nsMenu"></div>
-          </div>
-          <div class="tb-dd search-wrap">
-            <div class="tb-search">🔍<input id="globalSearch" placeholder="Search resources, CVEs, controls…" autocomplete="off" oninput="onSearch(this.value)" onfocus="onSearch(this.value)" onkeydown="searchKey(event)"></div>
-            <div class="dd-menu" id="searchMenu"></div>
-          </div>
-          <div class="tb-pill">Last 7 days ▾</div>
+          <div class="tb-tenant">ARMO Platform <span style="opacity:.5">▾</span></div>
+          <span class="tb-badge">Enterprise</span>
+          <span class="tb-ic" title="Invite">👤⁺</span>
+          <span class="tb-ic" title="Help">?</span>
+          <span class="tb-health" title="Cluster health">⚠ Unhealthy</span>
           <div class="tb-ava">S</div>
         </header>
         <main class="main" id="main"></main>
@@ -156,89 +149,11 @@ function closeDrawer(){
 }
 document.addEventListener("keydown", e => { if(e.key==="Escape"){ closeDrawer(); closeAllDD(); } });
 
-/* ---------------- top-bar interactivity: cluster filter + global search ---------- */
-function toggleDD(id, ev){ if(ev) ev.stopPropagation(); const m=document.getElementById(id); const open=m.classList.contains("open"); closeAllDD(); if(!open) m.classList.add("open"); }
-function closeAllDD(){ document.querySelectorAll(".dd-menu").forEach(m=>m.classList.remove("open")); }
-document.addEventListener("click", ()=>closeAllDD());
+/* no-op kept for pages that re-render tables and call it */
+window.applyClusterFilter = function(){};
 
-/* CLUSTER + NAMESPACE FILTERS — scope every cluster/ns-tagged page; persist across nav.
-   Pages that recompute (dashboard) register window.onScopeChange(cluster, ns). */
-const _CLUSTERS = (typeof CLUSTERS!=="undefined") ? CLUSTERS : ["prod-eu-1","prod-us-1","staging-eu-1","dev-1"];
-const _NAMESPACES = (typeof NAMESPACES!=="undefined") ? NAMESPACES : ["prod","staging","kube-system","payments","auth","data","dev"];
-let ACTIVE_CLUSTER = sessionStorage.getItem("armo_cluster") || "all";
-let ACTIVE_NS = sessionStorage.getItem("armo_ns") || "all";
-
-function _buildMenu(menuId, opts, active, allLabel, pick){
-  document.getElementById(menuId).innerHTML =
-    ["all", ...opts].map(o=>`<div class="dd-item ${o===active?'sel':''}" onclick="${pick}('${o}')">${o==="all"?allLabel:o}<span class="chk">✓</span></div>`).join("");
-}
-_buildMenu("clusterMenu", _CLUSTERS, ACTIVE_CLUSTER, "All clusters", "selectCluster");
-_buildMenu("nsMenu", _NAMESPACES, ACTIVE_NS, "All namespaces", "selectNs");
-function _setLabels(){
-  document.getElementById("clusterLabel").textContent = ACTIVE_CLUSTER==="all" ? "All clusters" : ACTIVE_CLUSTER;
-  document.getElementById("nsLabel").textContent = ACTIVE_NS==="all" ? "All namespaces" : ACTIVE_NS;
-  document.getElementById("clusterPill").classList.toggle("on", ACTIVE_CLUSTER!=="all");
-  document.getElementById("nsPill").classList.toggle("on", ACTIVE_NS!=="all");
-}
-_setLabels();
-function selectCluster(c){ ACTIVE_CLUSTER=c; sessionStorage.setItem("armo_cluster",c); _refreshScope(c==="all"?"Showing all clusters":"Scoped to "+c); }
-function selectNs(n){ ACTIVE_NS=n; sessionStorage.setItem("armo_ns",n); _refreshScope(n==="all"?"All namespaces":"Namespace: "+n); }
-function _refreshScope(msg){
-  _buildMenu("clusterMenu",_CLUSTERS,ACTIVE_CLUSTER,"All clusters","selectCluster");
-  _buildMenu("nsMenu",_NAMESPACES,ACTIVE_NS,"All namespaces","selectNs");
-  _setLabels(); closeAllDD(); applyScope(); toast(msg);
-}
-/* Hide rows that don't match the active cluster AND namespace. Rows missing a
-   data-cluster/data-namespace attribute aren't constrained by that dimension. */
-function applyScope(){
-  document.querySelectorAll("#main tbody tr").forEach(tr=>{
-    if(!tr.dataset.cluster && !tr.dataset.namespace) return;
-    const cOk = ACTIVE_CLUSTER==="all" || !tr.dataset.cluster || tr.dataset.cluster===ACTIVE_CLUSTER;
-    const nOk = ACTIVE_NS==="all" || !tr.dataset.namespace || tr.dataset.namespace===ACTIVE_NS;
-    tr.style.display = (cOk && nOk) ? "" : "none";
-  });
-  if(typeof window.onScopeChange==="function") window.onScopeChange(ACTIVE_CLUSTER, ACTIVE_NS);
-}
-window.applyClusterFilter = applyScope;  // back-compat alias used by pages
-
-/* GLOBAL SEARCH — unified index across datasets + pages; jumps to the entity */
-function _idx(){
-  const out=[];
-  const push=(t,s,kind,href)=>out.push({t,s,kind,href,q:(t+" "+s).toLowerCase()});
-  NAV.forEach(g=>g.items.forEach(it=>push(it.t,"Page","Page",it.href)));
-  push("Settings","Page","Page","settings.html");
-  if(typeof WORKLOADS!=="undefined") WORKLOADS.forEach(w=>push(w.name,`${w.kind} · ${w.ns} · ${w.cluster}`,"Workload",`inventory.html#workload=${encodeURIComponent(w.name)}`));
-  if(typeof CVES!=="undefined") CVES.forEach(c=>push(c.id,`${c.pkg} ${c.version} · ${c.sev}`,"CVE","vulnerabilities.html"));
-  if(typeof CONTROLS!=="undefined") CONTROLS.forEach(c=>push(c.name,`${c.id} · ${c.sev}`,"Control","compliance.html"));
-  if(typeof SECURITY_RISKS!=="undefined") SECURITY_RISKS.forEach(r=>push(r.name,`${r.category} · ${r.sev}`,"Risk","security-risks.html"));
-  if(typeof INCIDENTS!=="undefined") INCIDENTS.forEach(i=>push(i.name,`${CLASS_LABEL[i.classification]} · ${i.cluster}`,"Incident","runtime-incidents.html"));
-  return out;
-}
-let _results=[], _active=-1;
-function onSearch(v){
-  const menu=document.getElementById("searchMenu"); v=(v||"").trim().toLowerCase();
-  if(!v){ menu.classList.remove("open"); return; }
-  closeAllDD();
-  _results = _idx().filter(r=>r.q.includes(v)).slice(0,12); _active=-1;
-  if(!_results.length){ menu.innerHTML=`<div class="sr-empty">No matches for “${v}”.</div>`; menu.classList.add("open"); return; }
-  const groups={}; _results.forEach((r,i)=>{ (groups[r.kind]=groups[r.kind]||[]).push({...r,i}); });
-  menu.innerHTML = Object.entries(groups).map(([k,list])=>`<div class="sr-group">${k}${k==="Page"?"":"s"}</div>`+
-    list.map(r=>`<div class="sr-item" data-i="${r.i}" onclick="goResult(${r.i})"><div><div class="sr-t">${r.t}</div><div class="sr-s">${r.s}</div></div><span class="sr-kind">${r.kind}</span></div>`).join("")).join("");
-  menu.classList.add("open");
-}
-function goResult(i){ const r=_results[i]; if(r) location.href=r.href; }
-function searchKey(e){
-  const items=[...document.querySelectorAll("#searchMenu .sr-item")];
-  if(e.key==="ArrowDown"){ e.preventDefault(); _active=Math.min(_active+1,items.length-1); }
-  else if(e.key==="ArrowUp"){ e.preventDefault(); _active=Math.max(_active-1,0); }
-  else if(e.key==="Enter"){ if(_active>=0&&items[_active]) goResult(+items[_active].dataset.i); else if(items[0]) goResult(+items[0].dataset.i); return; }
-  else return;
-  items.forEach((el,idx)=>el.classList.toggle("active", idx===_active));
-}
-
-/* deep-link: open a workload drawer from search (e.g. inventory.html#workload=payments-api) */
+/* deep-link: open a workload drawer from a link (e.g. inventory.html#workload=payments-api) */
 window.addEventListener("load", ()=>{
-  applyScope();
   const m=/#workload=([^&]+)/.exec(location.hash);
   if(m && typeof openWorkload==="function") setTimeout(()=>openWorkload(decodeURIComponent(m[1])), 150);
 });

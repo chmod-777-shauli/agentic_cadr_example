@@ -7,52 +7,47 @@
 </head>
 <body data-page="inventory" data-title="Inventory">
 
-  <div class="page-head">
-    <div><h1>Inventory</h1><div class="sub">Workloads, hosts and cloud assets ARMO observes</div></div>
+  <h1 style="font-size:20px;margin:4px 0 16px">Inventory</h1>
+
+  <div class="toolbar" style="gap:8px">
+    <div class="filter-pill">Account ▾</div><div class="filter-pill">Region ▾</div><div class="filter-pill">Host ▾</div>
+    <div class="filter-pill">Type ▾</div><div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div>
+    <div class="filter-pill">Workload ▾</div><div class="filter-pill">Risk factor ▾</div><div class="filter-pill">Profile status ▾</div>
+    <span class="muted" style="font-size:13px;margin-left:6px">Save filters</span>
   </div>
 
-  <div class="toolbar">
-    <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">Namespace ▾</div>
-    <div class="filter-pill">Kind ▾</div>
-    <div class="filter-pill">Risk factor ▾</div>
-    <div class="filter-pill">Profile status ▾</div>
-    <div class="filter-pill">+ Add filter</div>
-    <div class="grow"></div>
-    <button class="btn sm">☆ Save filters</button>
+  <div class="inv-grid inv-head">
+    <span></span><span>Assets ⇅</span><span>Type ⇅</span><span>Risk factor ⇅</span><span>Profile status ⇅</span><span></span><span></span>
   </div>
-
-  <div id="invTable"></div>
-  <div class="paginator" id="pager"></div>
+  <div id="invList"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-  function pstat(w){
-    if(!w.status) return '<span class="muted">—</span>';
-    const bar = (w.status==="Learning" && w.learn!=null && w.learn<100)
-      ? `<span class="learnbar"><span style="width:${w.learn}%"></span></span> <span class="cellsub">${w.learn}%</span>` : "";
-    return `<span class="pstat ${w.status}">${w.status}</span> ${bar}`;
+  const ROWS = [
+    {n:"mysql",type:"Deployment",icon:"⟳",acct:"015253967648",flag:"🇫🇷",region:"eu-west-3",cluster:"arn:aws-eks-eu-west-3-015253967648-cluster-armo-cadr-demo-cluster",ns:"attack-suite",prof:"warn"},
+    {n:"ping-app",type:"Deployment",icon:"⟳",acct:"015253967648",flag:"🇫🇷",region:"eu-west-3",cluster:"arn:aws-eks-eu-west-3-015253967648-cluster-armo-cadr-demo-cluster",ns:"attack-suite",prof:"warn"},
+    {n:"secure-python-app",type:"Deployment",icon:"⟳",acct:"015253967648",flag:"🇫🇷",region:"eu-west-3",cluster:"arn:aws-eks-eu-west-3-015253967648-cluster-armo-cadr-demo-cluster",ns:"attack-suite",prof:"warn"},
+    {n:"changedetection",type:"Deployment",icon:"⟳",acct:"015253967648",flag:"🇫🇷",region:"eu-west-3",cluster:"arn:aws-eks-eu-west-3-015253967648-cluster-armo-cadr-demo-cluster",ns:"attack-suite",prof:"warn"},
+    {n:"test-pod-2",type:"Pod",icon:"◳",cluster:"do-fra1-tal-test-k8s",ns:"default",prof:"ok"},
+    {n:"inventory-db",type:"Deployment",icon:"⟳",acct:"elated-pottery-310110",flag:"🇺🇸",region:"us-central1",cluster:"gke_elated-pottery-310110_us-central1-c_armo-platform-cluster",ns:"credit-data",prof:"ok"},
+    {n:"productcatalogservice",type:"Deployment",icon:"⟳",acct:"elated-pottery-310110",flag:"🇺🇸",region:"us-central1",cluster:"gke_elated-pottery-310110_us-central1-c_armo-platform-cluster",ns:"product-catalog",prof:"ok"},
+    {n:"emailservice",type:"Deployment",icon:"⟳",acct:"elated-pottery-310110",flag:"🇺🇸",region:"us-central1",cluster:"gke_elated-pottery-310110_us-central1-c_armo-platform-cluster",ns:"product-catalog",prof:"ok"},
+  ];
+  function sub(r){
+    if(r.acct) return `Account: ${r.acct} | Region: ${r.flag} ${r.region} | Cluster: ${r.cluster} | Namespace: ${r.ns}`;
+    return `Cluster: ${r.cluster} | Namespace: ${r.ns}`;
   }
-  const rows = WORKLOADS.map(w=>`
-    <tr data-cluster="${w.cluster}" data-namespace="${w.ns}" class="clickable-row" onclick='openWorkload("${w.name}")'>
-      <td class="col-icon"><div class="kind-ic">${KIND_ABBR[w.kind]||w.kind.slice(0,2)}</div></td>
-      <td>
-        <div class="strong" style="font-size:14px">${w.name}</div>
-        <div class="cellsub">Cluster: ${w.cluster} | Namespace: ${w.ns}</div>
-      </td>
-      <td>${w.kind}</td>
-      <td><div style="display:flex;flex-wrap:wrap;gap:4px">${(w.riskFactors||[]).map(rf=>`<span class="rf-chip">${rf}</span>`).join("") || '<span class="muted">—</span>'}</div></td>
-      <td>${pstat(w)}</td>
-      <td><button class="btn-graph" onclick="event.stopPropagation();go('attack-path.html')">▦ Graph</button></td>
-      <td class="col-end"><span class="chevbtn">›</span></td>
-    </tr>`).join("");
-  document.getElementById("invTable").innerHTML = table(
-    [{t:"",cls:"col-icon"},{t:"Assets"},{t:"Type"},{t:"Risk Factor"},{t:"Profile Status"},{t:""},{t:"",cls:"col-end"}], rows);
-
-  document.getElementById("pager").innerHTML =
-    `<span>Workloads 1–${WORKLOADS.length} of 312</span>
-     <span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
+  document.getElementById("invList").innerHTML = ROWS.map(r=>`
+    <div class="inv-card inv-grid" onclick='openWorkload("${r.n}")'>
+      <span class="inv-ic">${r.icon}</span>
+      <div style="min-width:0"><div class="inv-name">${r.n}</div><div class="inv-sub">${sub(r)}</div></div>
+      <span>${r.type}</span>
+      <span></span>
+      <span class="prof ${r.prof}">${r.prof==="ok"?"✓":"⚠"} Completed</span>
+      <span class="inv-graph" onclick="event.stopPropagation();go('attack-path.html')">▦ Graph</span>
+      <span class="muted">›</span>
+    </div>`).join("");
 </script>
 </body>
 </html>
