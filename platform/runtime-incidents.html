@@ -5,12 +5,22 @@
   <div class="page-head" style="align-items:center">
     <div><h1>Runtime Incidents</h1><div class="sub">✓ 6 clusters · 3 cloud accounts monitored</div></div>
     <div class="page-actions">
-      <div class="tb-search" style="width:280px">🔍<input placeholder="Search by Process, IP, File, …"></div>
-      <button class="btn">↻ Refresh</button>
+      <span class="tb-health" style="color:#049d54;background:var(--ok-bg)">✓ 100% Coverage · 2/2 clusters</span>
+      <span class="tb-health" style="color:#049d54;background:var(--ok-bg)">✓ 100% Coverage · 1 account</span>
     </div>
   </div>
 
-  <div class="widgets-row" style="grid-template-columns:1.1fr 1.3fr 1.1fr">
+  <div class="toolbar">
+    <div class="tb-search" style="width:300px">🔍<input placeholder="Search by Process, IP, File, …"></div>
+    <div class="grow"></div><button class="btn sm">↻ Refresh</button>
+  </div>
+  <div class="toolbar" style="margin-top:-2px">
+    <div class="filter-pill">Account ▾</div><div class="filter-pill">Region ▾</div><div class="filter-pill">Host ▾</div><div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">Namespace ▾</div><div class="filter-pill">Workload ▾</div><div class="filter-pill">Severity ▾</div><div class="filter-pill">Threat ▾</div>
+    <div class="filter-pill on">Status: 2 ✕</div><div class="filter-pill">Classification ▾</div><div class="filter-pill">Ticket ▾</div><div class="filter-pill">+ Add filter</div>
+  </div>
+
+  <div class="widgets-row" style="grid-template-columns:1.1fr 1.4fr 1fr">
     <div class="card"><div class="widget-title">Incident Classification</div><div id="wClass"></div></div>
     <div class="card"><div class="widget-title">Top Threats</div><div id="wThreats"></div></div>
     <div class="card"><div class="widget-title">Workload Learning Status</div><div id="wLearn"></div></div>
@@ -24,21 +34,25 @@
     </div>
     <div class="grow"></div>
     <button class="btn sm" disabled>Change status (0)</button>
-  </div>
-  <div class="toolbar" style="margin-top:-2px">
-    <div class="filter-pill">Severity ▾</div><div class="filter-pill">Classification ▾</div><div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">Namespace ▾</div><div class="filter-pill">MITRE ▾</div><div class="filter-pill on">Status: Open, Investigating ✕</div>
-    <div class="grow"></div><span class="count-note" id="cnt"></span>
+    <span class="count-note" id="cnt"></span>
   </div>
 
   <div id="t"></div><div class="paginator" id="pager"></div>
 
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const byc={}; INCIDENTS.forEach(i=>byc[i.classification]=(byc[i.classification]||0)+1);
-  document.getElementById("wClass").innerHTML = Object.entries(byc).map(([c,n])=>`<div style="display:flex;align-items:center;gap:9px;margin:6px 0"><b style="color:${CLASS_COLOR[c]};font-size:16px;width:18px">${n}</b>${clsf(c)}</div>`).join("");
-  const tn={}; INCIDENTS.forEach(i=>tn[i.name]=(tn[i.name]||0)+1);
-  document.getElementById("wThreats").innerHTML = hbars(Object.entries(tn).sort((a,b)=>b[1]-a[1]).slice(0,4).map(([nm,v])=>({nm,v})), "#e11900");
+  document.getElementById("wClass").innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px">
+      <div style="text-align:center"><div class="kpi-num" style="font-size:34px;margin:0;color:var(--sev-high)">1</div><div class="cellsub" style="color:var(--sev-high);font-weight:700">Active Threat</div></div>
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;gap:9px"><b style="color:var(--sev-high);width:24px;font-size:15px">8</b><span class="cellsub">Unsuccessful Attacks</span></div>
+        <div style="display:flex;align-items:center;gap:9px"><b style="color:#b8930a;width:24px;font-size:15px">61</b><span class="cellsub">Review Required</span></div>
+        <div style="display:flex;align-items:center;gap:9px"><b style="color:#0090ff;width:24px;font-size:15px">21</b><span class="cellsub">Informational</span></div>
+      </div>
+    </div>
+    <div class="minilink" style="margin-top:12px">Explore Trends Over Time →</div>`;
+  const TOP=[["AWS RDS instance created",15],["AWS RDS instance deleted",12],["Detect EC2 User Data Modification",9],["AWS CloudWatch Log Group Deleted",7],["AWS IAM Key Deletion",5]];
+  document.getElementById("wThreats").innerHTML = `<table class="tbl" style="font-size:12.5px"><thead><tr><th style="background:transparent;border:0;padding:2px 0">Threat</th><th style="background:transparent;border:0;padding:2px 0;text-align:right">Incidents</th></tr></thead><tbody>${TOP.map(t=>`<tr style="cursor:default"><td style="padding:6px 0;border-color:var(--line-soft)">${t[0]}</td><td class="num strong" style="padding:6px 0;border-color:var(--line-soft)">${t[1]}</td></tr>`).join("")}</tbody></table>`;
   document.getElementById("wLearn").innerHTML = `<div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:#049d54"></span>Completed<span class="n">248</span></div><div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:#0090ff"></span>Learning<span class="n">51</span></div><div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:#A2A2A7"></span>Missing<span class="n">13</span></div>`;
 
   const rows = INCIDENTS.map(i=>`

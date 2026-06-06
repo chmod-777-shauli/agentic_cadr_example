@@ -2,38 +2,39 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Registry Scanning</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="registry-scanning" data-title="Registry Scanning">
-  <div class="page-head"><div><h1>Registry Scanning</h1></div><div class="page-actions"><button class="btn">Connect registry</button><button class="btn primary">⤓ Export</button></div></div>
+  <div class="page-head" style="align-items:center"><div><h1>Registry Scanning</h1></div><div class="page-actions"><button class="btn">Connect registry</button></div></div>
 
-  <div class="card" style="margin-bottom:18px">
-    <div class="widget-title">Total vulnerabilities</div>
-    <div class="sev-tiles" id="totals"></div>
-  </div>
+  <div class="sev-tiles" style="margin-bottom:18px" id="tiles"></div>
 
   <div class="toolbar">
-    <div class="filter-pill">Status ▾</div><div class="filter-pill">Scan time ▾</div><div class="filter-pill">Registry ▾</div>
-    <div class="filter-pill">Repository ▾</div><div class="filter-pill">Image tag ▾</div>
-    <div class="grow"></div>
-    <div class="hotcve-toggle"><span class="switch off"></span> Fixable</div>
-    <div class="hotcve-toggle"><span class="switch off"></span> RCE</div>
+    <div class="filter-pill">+ Add filter</div>
+    <div class="grow"></div><button class="btn sm">☆ Save filters</button><button class="btn sm">⤓</button>
   </div>
-  <div id="t"></div><div class="paginator" id="pager"></div>
+  <div id="t"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const tot={Critical:41,High:312,Medium:596,Low:387,Negligible:120};
-  const extra=`<div class="sev-tile"><span class="v pass">812</span><span class="l">Fixed</span></div><div class="sev-tile"><span class="v" style="color:var(--sev-crit)">9</span><span class="l">RCE</span></div>`;
-  document.getElementById("totals").innerHTML = SEV.filter(s=>tot[s]!=null).map(s=>`<div class="sev-tile"><span class="v" style="color:${SEV_COLOR[s]}">${tot[s]}</span><span class="l">${s}</span></div>`).join("") + extra;
-  const R=[
-    {st:"Connected",scan:"Jun 5, 2026 08:14",reg:"docker.io/armo",repo:"payments-api",tag:"1.8.2",failed:{Critical:3,High:8,Medium:14,Low:6}},
-    {st:"Connected",scan:"Jun 5, 2026 06:40",reg:"docker.io/library",repo:"nginx",tag:"1.25.1",failed:{Critical:1,High:5,Medium:9,Low:11}},
-    {st:"Scanning",scan:"Jun 5, 2026 09:02",reg:"ghcr.io/armo",repo:"batch-worker",tag:"3.1",failed:{Critical:0,High:3,Medium:12,Low:8}},
-    {st:"Connected",scan:"Jun 4, 2026 23:55",reg:"123.dkr.ecr.eu-central-1",repo:"auth-service",tag:"4.4",failed:{Critical:2,High:4,Medium:7,Low:3}},
+  const TILES=[
+    {l:"Total Vulnerabilities",v:"11,068",fix:"7,998",rce:"782",c:"var(--txt)"},
+    {l:"Critical",v:"211",fix:"211",rce:"66",c:"var(--sev-crit)"},
+    {l:"High",v:"1,142",fix:"1,116",rce:"204",c:"var(--sev-high)"},
+    {l:"Medium",v:"6,722",fix:"5,208",rce:"365",c:"#9a5a00"},
+    {l:"Low",v:"2,783",fix:"1,408",rce:"139",c:"var(--sev-low)"},
+    {l:"Negligible",v:"207",fix:"52",rce:"8",c:"#0072cc"},
+    {l:"Unknown",v:"3",fix:"3",rce:"0",c:"#71717a"},
   ];
-  const STC={"Connected":"#049d54","Scanning":"#0090ff","Failed":"#e11900"};
+  document.getElementById("tiles").innerHTML = TILES.map(t=>`<div class="sev-tile" style="min-width:120px"><span class="v" style="color:${t.c}">${t.v}</span><span class="l">${t.l}</span><span class="cellsub">${t.fix} Fixable</span><span class="cellsub">${t.rce} RCE</span></div>`).join("");
+
+  function fr(o){ return SEV.filter(s=>o[s]!=null).map(s=>`<span class="fr"><i style="background:${SEV_COLOR[s]}"></i>${o[s]}</span>`).join(""); }
+  const R=[
+    {scan:"Mar 9, 2026 02:00:26",reg:"quay.io",repo:"systemtests/webgoat",tag:"latest",f:{Critical:12,High:84,Medium:418,Low:194,Negligible:11}},
+    {scan:"May 11, 2026 03:00:26",reg:"quay.io",repo:"systemtests/webgoat",tag:"latest",f:{Critical:18,High:92,Medium:568,Low:228,Negligible:19}},
+    {scan:"Mar 16, 2026 02:00:31",reg:"quay.io",repo:"systemtests/webgoat",tag:"latest",f:{Critical:12,High:85,Medium:474,Low:198,Negligible:11}},
+    {scan:"Mar 23, 2026 02:00:34",reg:"quay.io",repo:"systemtests/webgoat",tag:"latest",f:{Critical:14,High:84,Medium:473,Low:198,Negligible:11}},
+    {scan:"Mar 30, 2026 03:00:28",reg:"quay.io",repo:"systemtests/webgoat",tag:"latest",f:{Critical:16,High:85,Medium:497,Low:198,Negligible:11}},
+  ];
   const rows=R.map(r=>`<tr class="clickable-row" onclick="go('vulnerabilities.html')">
-    <td><span class="status-dot" style="background:${STC[r.st]}"></span></td>
-    <td class="muted" style="white-space:nowrap">${r.scan}</td>
-    <td class="strong mono">${r.reg}</td><td>${r.repo}</td><td class="mono">${r.tag}</td>
-    <td style="min-width:210px">${sevbar(r.failed)}<div class="cellsub" style="margin-top:5px">${sevCounts(r.failed)}</div></td></tr>`).join("");
+    <td><span class="status-dot" style="background:#049d54"></span></td>
+    <td class="muted" style="white-space:nowrap">${r.scan}</td><td class="strong">${r.reg}</td><td class="muted">${r.repo}</td><td class="mono">${r.tag}</td>
+    <td>${fr(r.f)}</td></tr>`).join("");
   document.getElementById("t").innerHTML = table([{t:"Stat."},{t:"Scan time"},{t:"Registry"},{t:"Repository"},{t:"Image tag"},{t:"Severity"}], rows);
-  document.getElementById("pager").innerHTML = `<span>Images 1–4 of 1,284</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 </script></body></html>

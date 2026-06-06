@@ -2,37 +2,33 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Risk Acceptance</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="risk-acceptance" data-title="Risk Acceptance">
-  <div class="page-head"><div><h1>Risk Acceptance</h1></div><div class="page-actions"><button class="btn primary">+ Accept risk</button></div></div>
-  <div class="banner info" style="margin-bottom:18px">This page consolidates all accepted risks and lets you review and manage them.</div>
+  <h1 style="font-size:20px;margin:4px 0 12px">Risk Acceptance</h1>
+  <div class="banner" style="background:var(--panel-2);border:1px solid var(--line);color:var(--txt-dim);margin-bottom:14px">ⓘ This page consolidates all accepted risks and lets you review and manage them.</div>
 
-  <div class="toggle-group" id="tabs" style="margin-bottom:18px">
-    <div class="tg on" data-v="sr">Security Risks</div>
-    <div class="tg" data-v="vuln">Vulnerabilities</div>
-    <div class="tg" data-v="comp">Compliance</div>
-    <div class="tg" data-v="rt">Runtime Incidents</div>
+  <div class="tabs">
+    <div class="tab active">Security Risks</div><div class="tab">Vulnerabilities</div><div class="tab">Compliance</div><div class="tab">Runtime Incidents</div>
   </div>
 
   <div class="toolbar">
     <div class="filter-pill">Risk name ▾</div><div class="filter-pill">Category ▾</div><div class="filter-pill">Severity ▾</div>
-    <div class="filter-pill">Expiration date ▾</div><div class="filter-pill">Accepted by ▾</div>
+    <div class="filter-pill">Expiration Date ▾</div><div class="filter-pill">Accepted By ▾</div><div class="filter-pill">Acceptance Date ▾</div>
     <div class="grow"></div><button class="btn sm">☆ Save filters</button>
   </div>
-  <div id="t"></div><div class="paginator" id="pager"></div>
+  <div id="t"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
   const X=[
-    {scope:"cluster: prod-eu-1 · ns: payments",cat:"Configuration scanning",by:"shauli@armosec.io",accepted:"May 12, 2026",expires:"Jun 29, 2026",reason:"Legacy app cannot run non-root"},
-    {scope:"cluster: prod-us-1",cat:"Vulnerabilities",by:"dana@armosec.io",accepted:"Jun 1, 2026",expires:"Jun 10, 2026",reason:"Not reachable at runtime"},
-    {scope:"All clusters",cat:"Configuration scanning",by:"ops@armosec.io",accepted:"Apr 3, 2026",expires:"NEVER",reason:"Batch jobs need burst capacity"},
-    {scope:"cluster: prod-eu-1 · ns: data",cat:"RBAC",by:"shauli@armosec.io",accepted:"May 28, 2026",expires:"Aug 26, 2026",reason:"Service mesh requires elevated SA"},
+    {name:"External facing workload with critical vulnerabilities and impacts",cat:"Attack path",sev:"High",exp:"NEVER",by:"shauli@armosec.io",acc:"Jun 4, 2026"},
+    {name:"Privileged container",cat:"Workloads",sev:"High",exp:"NEVER",by:"yossib@armosec.io",acc:"Mar 17, 2026"},
+    {name:"hostPath mount",cat:"Workloads",sev:"High",exp:"NEVER",by:"shauli@armosec.io",acc:"Feb 26, 2026"},
+    {name:"Privileged container",cat:"Workloads",sev:"High",exp:"NEVER",by:"yossib@armosec.io",acc:"Dec 1, 2025"},
+    {name:"Privileged container",cat:"Workloads",sev:"High",exp:"NEVER",by:"yossib@armosec.io",acc:"Sep 25, 2025"},
+    {name:"Allow privilege escalation",cat:"Workloads",sev:"Medium",exp:"NEVER",by:"yossib@armosec.io",acc:"May 15, 2025"},
+    {name:"Privileged container",cat:"Workloads",sev:"High",exp:"NEVER",by:"yossib@armosec.io",acc:"Mar 13, 2025"},
   ];
   const rows=X.map(x=>`<tr class="clickable-row" onclick="toast('Edit exception')">
-    <td class="strong">${x.scope}</td><td>${x.cat}</td>
-    <td class="muted">${x.by}</td><td class="muted">${x.accepted}</td>
-    <td class="muted">${x.expires==="NEVER"?'<span class="tag">NEVER</span>':x.expires}</td>
-    <td class="muted">${x.reason}</td>
+    <td class="strong">${x.name}</td><td>${x.cat}</td><td>${sev(x.sev)}</td>
+    <td class="muted">${x.exp==="NEVER"?'<span class="tag">NEVER</span>':x.exp}</td><td class="muted">${x.by}</td><td class="muted">${x.acc}</td>
     <td class="col-end"><span class="chevbtn">✎</span></td></tr>`).join("");
-  document.getElementById("t").innerHTML = table([{t:"Scope"},{t:"Category"},{t:"Accepted by"},{t:"Acceptance date"},{t:"Expiration date"},{t:"Reason"},{t:"",cls:"col-end"}], rows);
-  document.getElementById("pager").innerHTML = `<span>Accepted risks 1–4 of 34</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
-  document.querySelectorAll("#tabs .tg").forEach(t=>t.onclick=()=>{document.querySelectorAll("#tabs .tg").forEach(x=>x.classList.remove("on"));t.classList.add("on");toast("Tab: "+t.textContent);});
+  document.getElementById("t").innerHTML = table([{t:"Risk name"},{t:"Category"},{t:"Severity"},{t:"Expiration date"},{t:"Accepted by"},{t:"Acceptance date"},{t:"",cls:"col-end"}], rows);
 </script></body></html>

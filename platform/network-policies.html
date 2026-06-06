@@ -2,36 +2,30 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Network Policies</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="network-policies" data-title="Network Policies">
-  <div class="page-head"><div><h1>Network Policies</h1><div class="sub">Select the workloads to generate a least-privilege Network Policy</div></div></div>
+  <h1 style="font-size:20px;margin:4px 0 14px">Network Policies</h1>
+  <div class="banner" style="background:var(--panel-2);border:1px solid var(--line);color:var(--txt-dim);margin-bottom:16px">Select the workloads to generate a Network Policy</div>
   <div class="toolbar">
     <div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div><div class="filter-pill">Workload ▾</div>
-    <div class="filter-pill">Kind ▾</div><div class="filter-pill">Status ▾</div><div class="filter-pill">Label ▾</div><div class="filter-pill">Type ▾</div>
-    <div class="grow"></div><button class="btn sm">☆ Save filters</button>
+    <div class="filter-pill">Kind ▾</div><div class="filter-pill on">Status: 2 ✕</div><div class="filter-pill">Label ▾</div><div class="filter-pill">Type ▾</div>
+    <span class="muted" style="font-size:13px;margin-left:4px">Clear</span><span class="muted" style="font-size:13px">Filters saved</span>
   </div>
-  <div class="toolbar" style="margin-top:-2px">
-    <span class="count-note">Showing 5 of 96 Workloads · <span style="color:var(--sev-med);font-weight:700">⚠ Missing runtime info for 12 Workloads</span></span>
-    <div class="grow"></div><button class="btn primary" id="genBtn" disabled>Generate policy</button>
-  </div>
-  <div id="t"></div><div class="paginator" id="pager"></div>
+  <div class="toolbar" style="margin-top:-2px"><span class="count-note">Showing 50 of 66 Workloads</span><div class="grow"></div><button class="btn primary">⚙ Generate policy</button></div>
+  <div id="t"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const NP = [
-    {w:"payments-api",k:"Deployment",ns:"payments",c:"prod-eu-1",st:"Required",type:"—"},
-    {w:"auth-service",k:"Deployment",ns:"auth",c:"prod-us-1",st:"Applied",type:"Generated"},
-    {w:"edge-proxy",k:"DaemonSet",ns:"prod",c:"prod-us-1",st:"Required",type:"—"},
-    {w:"web-frontend",k:"Deployment",ns:"prod",c:"prod-us-1",st:"Missing runtime info",type:"—"},
-    {w:"postgres",k:"StatefulSet",ns:"data",c:"prod-eu-1",st:"Applied",type:"Generated"},
+  const NP=[
+    {w:"test-pod",k:"Pod",ns:"default",c:"do-fra1-tal-test-k8s",st:"Missing"},
+    {w:"test-pod-2",k:"Pod",ns:"default",c:"do-fra1-tal-test-k8s",st:"Missing"},
+    {w:"prometheus-prometheus",k:"DaemonSet",ns:"default",c:"armo-platform-cluster",st:"Missing"},
+    {w:"collector",k:"DaemonSet",ns:"gmp-system",c:"armo-platform-cluster",st:"Missing"},
+    {w:"adservice",k:"Deployment",ns:"ad",c:"armo-platform-cluster",st:"Applied"},
+    {w:"app-ssh-server",k:"Deployment",ns:"admin",c:"armo-platform-cluster",st:"Applied"},
+    {w:"ping-app",k:"Deployment",ns:"admin",c:"armo-platform-cluster",st:"Missing"},
   ];
-  const ST={"Applied":"#049d54","Required":"#fb9000","Missing runtime info":"#A2A2A7"};
-  const rows = NP.map(r=>`
-    <tr data-cluster="${r.c}" data-namespace="${r.ns}" class="clickable-row" onclick='openWorkload("${r.w}")'>
-      <td class="col-cb"><span class="cb"></span></td>
-      <td class="strong">${r.w}</td><td>${r.k}</td><td class="muted">${r.ns}</td><td class="muted">${r.c}</td>
-      <td><span class="status-dot" style="background:${ST[r.st]}"></span>${r.st}</td>
-      <td>${r.type==="—"?'<span class="muted">—</span>':`<span class="tag">${r.type}</span>`}</td>
-      <td class="col-end"><span class="btn-graph" onclick="event.stopPropagation();go('attack-path.html')">▦</span></td>
-    </tr>`).join("");
-  document.getElementById("t").innerHTML = table(
-    [{t:"",cls:"col-cb"},{t:"Workload"},{t:"Kind"},{t:"Namespace"},{t:"Cluster"},{t:"Status"},{t:"Type"},{t:"",cls:"col-end"}], rows);
-  document.getElementById("pager").innerHTML = `<span>Workloads 1–5 of 96</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
+  const ST={"Applied":"#049d54","Missing":"#A2A2A7","Required":"#fb9000"};
+  const rows=NP.map(r=>`<tr data-cluster="${r.c}" data-namespace="${r.ns}" class="clickable-row" onclick='openWorkload("${r.w}")'>
+    <td class="col-cb"><span class="cb"></span></td><td class="strong">${r.w}</td><td>${r.k}</td><td class="muted">${r.ns}</td><td class="muted">${r.c}</td>
+    <td><span class="status-dot" style="background:${ST[r.st]}"></span>${r.st}</td>
+    <td class="col-end"><span class="btn-graph" onclick="event.stopPropagation();go('attack-path.html')">⚙</span></td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"",cls:"col-cb"},{t:"Workload"},{t:"Kind"},{t:"Namespace"},{t:"Cluster"},{t:"Status"},{t:"Type",cls:"col-end"}], rows);
 </script></body></html>

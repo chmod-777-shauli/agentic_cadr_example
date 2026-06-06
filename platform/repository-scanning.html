@@ -2,35 +2,31 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Repository Scanning</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="repository-scanning" data-title="Repository Scanning">
-  <div class="page-head"><div><h1>Repository Scanning</h1></div><div class="page-actions"><button class="btn primary">Scan repository</button></div></div>
+  <div class="page-head" style="align-items:center"><div><h1>Repository Scanning</h1></div><div class="page-actions"><button class="btn">Scan repository</button></div></div>
 
-  <div class="card" style="margin-bottom:18px">
-    <div class="widget-title">Total Failed Resources</div>
-    <div class="sev-tiles" id="totals"></div>
+  <div class="sev-tiles" style="margin-bottom:18px">
+    <div class="sev-tile" style="min-width:150px"><span class="v">244</span><span class="l">Total Failed Resources</span></div>
+    <div class="sev-tile"><span class="v" style="color:var(--sev-crit)">0</span><span class="l">Critical</span></div>
+    <div class="sev-tile"><span class="v" style="color:var(--sev-high)">72</span><span class="l">High</span></div>
+    <div class="sev-tile"><span class="v" style="color:#9a5a00">98</span><span class="l">Medium</span></div>
+    <div class="sev-tile"><span class="v" style="color:var(--sev-low)">74</span><span class="l">Low</span></div>
   </div>
 
   <div class="toolbar">
-    <div class="filter-pill">Provider ▾</div><div class="filter-pill">Repository ▾</div><div class="filter-pill">Owner ▾</div>
-    <div class="filter-pill">Branch ▾</div><div class="filter-pill">Last scan ▾</div><div class="filter-pill">Frameworks ▾</div>
+    <div class="filter-pill">Provider ▾</div><div class="filter-pill">Repository ▾</div><div class="filter-pill">Owner ▾</div><div class="filter-pill">Branch ▾</div>
+    <div class="filter-pill">Last scan ▾</div><div class="filter-pill">Frameworks ▾</div><div class="filter-pill">Ticket ▾</div>
     <div class="grow"></div><button class="btn sm">☆ Save filters</button>
   </div>
-  <div id="t"></div><div class="paginator" id="pager"></div>
+  <div id="t"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const tot={Critical:3,High:25,Medium:37,Low:21};
-  document.getElementById("totals").innerHTML = SEV.filter(s=>tot[s]!=null).map(s=>`<div class="sev-tile"><span class="v" style="color:${SEV_COLOR[s]}">${tot[s]}</span><span class="l">${s}</span></div>`).join("");
+  function fr(o){ return SEV.filter(s=>o[s]!=null).map(s=>`<span class="fr"><i style="background:${SEV_COLOR[s]}"></i>${o[s]}</span>`).join(""); }
   const R=[
-    {repo:"armosec/payments-api",prov:"GitHub",branch:"main",owner:"platform",files:128,scan:"Jun 5, 08:14",fw:"NSA, CIS",failed:{Critical:1,High:6,Medium:9},tkt:true},
-    {repo:"armosec/infra-terraform",prov:"GitHub",branch:"main",owner:"infra",files:312,scan:"Jun 5, 04:02",fw:"All",failed:{Critical:2,High:12,Medium:21},tkt:false},
-    {repo:"armosec/helm-charts",prov:"GitHub",branch:"main",owner:"platform",files:96,scan:"Jun 4, 19:30",fw:"CIS",failed:{Critical:0,High:4,Medium:7},tkt:false},
-    {repo:"armosec/auth-service",prov:"GitLab",branch:"develop",owner:"identity",files:74,scan:"Jun 5, 02:11",fw:"NSA",failed:{Critical:0,High:3,Medium:5},tkt:false},
+    {prov:"GitHub",repo:"github-action",owner:"kubescape",branch:"main",files:12,scan:"01/06/26, 5:28:32 PM",fw:"All",failed:{Critical:0,High:36,Medium:49,Low:37}},
   ];
   const rows=R.map(r=>`<tr class="clickable-row" onclick="toast('Open repository findings')">
-    <td><span class="tag">${r.prov}</span></td><td class="strong">${r.repo}</td><td class="mono muted">${r.branch}</td>
-    <td class="muted">${r.owner}</td><td class="num">${r.files}</td><td class="muted" style="white-space:nowrap">${r.scan}</td>
-    <td>${r.fw==="All"?'<span class="muted">All</span>':r.fw.split(", ").map(f=>`<span class="tag" style="margin-right:4px">${f}</span>`).join("")}</td>
-    <td style="min-width:200px">${sevbar(r.failed)}<div class="cellsub" style="margin-top:5px">${sevCounts(r.failed)}</div></td>
-    <td>${r.tkt?'<span class="tkt">🎫</span>':''}</td></tr>`).join("");
-  document.getElementById("t").innerHTML = table([{t:"Provider"},{t:"Repository"},{t:"Branch"},{t:"Owner"},{t:"Files",cls:"num"},{t:"Last scan"},{t:"Frameworks"},{t:"Failed Resources"},{t:""}], rows);
-  document.getElementById("pager").innerHTML = `<span>Repositories 1–4 of 14</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
+    <td><span class="inv-ic" style="width:26px;height:26px">⎇</span></td><td class="strong">${r.repo}</td><td class="muted">${r.owner}</td>
+    <td class="mono muted">${r.branch}</td><td class="num">${r.files}</td><td class="muted" style="white-space:nowrap">${r.scan}</td>
+    <td class="muted">${r.fw}</td><td>${fr(r.failed)}</td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"Provider"},{t:"Repository"},{t:"Owner"},{t:"Branch"},{t:"Files",cls:"num"},{t:"Last scan"},{t:"Frameworks"},{t:"Failed Resources"}], rows);
 </script></body></html>

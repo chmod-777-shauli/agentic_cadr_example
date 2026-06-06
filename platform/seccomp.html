@@ -2,36 +2,32 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · Seccomp Profiles</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="seccomp" data-title="Seccomp Profiles">
-  <div class="page-head"><div><h1>Seccomp Profiles</h1><div class="sub">Use a Seccomp profile to restrict a container's system calls, minimizing the kernel attack surface</div></div></div>
+  <h1 style="font-size:20px;margin:4px 0 14px">Seccomp Profiles</h1>
+  <div class="banner" style="background:var(--panel-2);border:1px solid var(--line);color:var(--txt-dim);margin-bottom:16px">Use a Seccomp profile to restrict a container's system call capabilities, minimizing the attack surface of the kernel.</div>
   <div class="toolbar">
     <div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div><div class="filter-pill">Workload ▾</div>
-    <div class="filter-pill">Kind ▾</div><div class="filter-pill">Label ▾</div><div class="filter-pill">Profile status ▾</div>
+    <div class="filter-pill">Kind ▾</div><div class="filter-pill">Label ▾</div><div class="filter-pill">Profile status ▾</div><div class="filter-pill">Risk factor ▾</div>
     <div class="grow"></div><button class="btn sm">☆ Save filters</button>
   </div>
-  <div class="toolbar" style="margin-top:-2px">
-    <span class="count-note">Showing 4 of 108 Workloads</span>
-    <div class="grow"></div><button class="btn primary" disabled>Generate profile</button>
-  </div>
-  <div id="t"></div><div class="paginator" id="pager"></div>
+  <div class="toolbar" style="margin-top:-2px"><span class="count-note">Showing 50 of 77 Workloads</span><div class="grow"></div><button class="btn primary">⚙ Generate profile</button></div>
+  <div id="t"></div>
 <script src="assets/data.js"></script><script src="assets/shell.js"></script>
 <script>
-  const SP = [
-    {w:"payments-api",k:"Deployment",ns:"payments",c:"prod-eu-1",st:"Overly permissive",allowed:312,used:118},
-    {w:"auth-service",k:"Deployment",ns:"auth",c:"prod-us-1",st:"Optimized",allowed:96,used:96},
-    {w:"edge-proxy",k:"DaemonSet",ns:"prod",c:"prod-us-1",st:"Overly permissive",allowed:289,used:131},
-    {w:"batch-worker",k:"Deployment",ns:"data",c:"staging-eu-1",st:"Missing",allowed:0,used:0},
+  const SP=[
+    {w:"argocd-redis",k:"Deployment",ns:"argocd",c:"armo-platform-cluster",st:"Missing",a:0,u:0},
+    {w:"hostgenerator",k:"Deployment",ns:"hostgenerator",c:"armo-platform-cluster",st:"Missing",a:0,u:0},
+    {w:"frontend",k:"Deployment",ns:"frontend",c:"armo-platform-cluster",st:"Overly permissive",a:312,u:118},
+    {w:"inventory-db",k:"Deployment",ns:"credit-data",c:"armo-platform-cluster",st:"Missing",a:0,u:0},
+    {w:"checkoutservice",k:"Deployment",ns:"checkout",c:"armo-platform-cluster",st:"Overly permissive",a:264,u:97},
+    {w:"ping-app",k:"Deployment",ns:"admin",c:"armo-platform-cluster",st:"Missing",a:0,u:0},
+    {w:"recommendationservice",k:"Deployment",ns:"recommendation",c:"armo-platform-cluster",st:"Optimized",a:96,u:96},
   ];
-  const ST={"Optimized":"#049d54","Overly permissive":"#e11900","Missing":"#fb9000"};
-  function donutMini(used,allowed){ const pct=allowed?used/allowed*100:0; return `<div class="donut-mini" style="background:conic-gradient(#053CA1 ${pct*3.6}deg,#e6e9f0 0)"><i></i></div>`; }
-  const rows = SP.map(r=>`
-    <tr data-cluster="${r.c}" data-namespace="${r.ns}" class="clickable-row" onclick='openWorkload("${r.w}")'>
-      <td class="col-cb"><span class="cb"></span></td>
-      <td class="strong">${r.w}</td><td>${r.k}</td><td class="muted">${r.ns}</td><td class="muted">${r.c}</td>
-      <td><span class="status-dot" style="background:${ST[r.st]}"></span>${r.st}</td>
-      <td><div class="syscell">${donutMini(r.used,r.allowed)}<span class="lg">${r.used} used / ${r.allowed} allowed</span></div></td>
-      <td class="col-end"><span class="chevbtn">⚙</span></td>
-    </tr>`).join("");
-  document.getElementById("t").innerHTML = table(
-    [{t:"",cls:"col-cb"},{t:"Workload"},{t:"Kind"},{t:"Namespace"},{t:"Cluster"},{t:"Profile status"},{t:"Syscalls"},{t:"",cls:"col-end"}], rows);
-  document.getElementById("pager").innerHTML = `<span>Workloads 1–4 of 108</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
+  const ST={"Optimized":"#049d54","Overly permissive":"#e11900","Missing":"#A2A2A7"};
+  function dmini(u,a){ const p=a?u/a*100:0; return `<div class="donut-mini" style="background:conic-gradient(#053CA1 ${p*3.6}deg,#e6e9f0 0)"><i></i></div>`; }
+  const rows=SP.map(r=>`<tr data-cluster="${r.c}" data-namespace="${r.ns}" class="clickable-row" onclick='openWorkload("${r.w}")'>
+    <td class="col-cb"><span class="cb"></span></td><td class="strong">${r.w}</td><td>${r.k}</td><td class="muted">${r.ns}</td><td class="muted">${r.c}</td>
+    <td><span class="status-dot" style="background:${ST[r.st]}"></span>${r.st}</td>
+    <td>${r.a?`<div class="syscell">${dmini(r.u,r.a)}<span class="lg">${r.u} / ${r.a}</span></div>`:'<span class="muted">—</span>'}</td>
+    <td class="col-end"><span class="chevbtn">⚙</span></td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"",cls:"col-cb"},{t:"Workload"},{t:"Kind"},{t:"Namespace"},{t:"Cluster"},{t:"Profile status"},{t:"Syscalls"},{t:"",cls:"col-end"}], rows);
 </script></body></html>
