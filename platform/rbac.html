@@ -2,17 +2,21 @@
 <html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ARMO · RBAC Insights</title><link rel="stylesheet" href="assets/app.css"></head>
 <body data-page="rbac" data-title="RBAC Insights">
-  <div class="page-head"><div><h1>RBAC Insights</h1><div class="sub">Visualize and query Kubernetes RBAC — subjects, roles and the resources they can reach</div></div>
-  <div class="page-actions"><button class="btn">Clear</button></div></div>
+  <div class="crumbs" style="margin:2px 0 16px;font-size:14px">
+    <b style="font-size:16px">RBAC Insights</b> <span style="color:var(--txt-faint)">›</span>
+    <span class="muted">arn-aws-eks-eu-west-3-015253967648-cluster-armo-cadr-demo-cluster</span>
+    <span style="color:var(--txt-faint)">›</span> <b>Show subjects with all privileges on a resource</b>
+  </div>
 
   <div class="rbac-toolbar">
-    <div class="filter-pill">Cluster: prod-eu-1 ▾</div>
-    <div class="filter-pill">Query: Show subjects with high privileges ▾</div>
-    <div class="filter-pill">Investigate ▾</div>
+    <div class="filter-pill">Cluster ▾</div>
+    <div class="filter-pill">Query ▾</div>
+    <div class="filter-pill">Investigate ⛶</div>
     <div class="filter-pill">Who-can ▾</div>
-    <div class="grow"></div>
-    <label class="rbac-check"><span class="cb on"></span> Group by verbs</label>
+    <label class="rbac-check"><span class="cb"></span> Group by verbs</label>
     <label class="rbac-check"><span class="cb"></span> Layout by type</label>
+    <div class="grow"></div>
+    <button class="btn">✕ Clear</button>
   </div>
 
   <div class="card pad0">

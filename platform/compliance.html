@@ -7,63 +7,42 @@
 </head>
 <body data-page="compliance" data-title="Compliance">
 
-  <div class="page-head" style="align-items:center">
-    <div class="toggle-group">
-      <div class="tg on">Kubernetes</div>
-      <div class="tg">Cloud</div>
-    </div>
-    <div class="page-actions"><button class="btn">+ Add cluster</button></div>
-  </div>
+  <div class="page-head" style="align-items:center"><div><h1>Compliance</h1></div>
+    <div class="page-actions"><button class="btn">+ Add cluster</button></div></div>
 
-  <div class="card" style="margin-bottom:18px">
-    <div class="widget-title">Total Failed Resources</div>
-    <div style="display:flex;align-items:center;gap:26px">
-      <div class="kpi-num" style="font-size:30px;margin:0">2,184</div>
-      <div style="flex:1" id="totBar"></div>
-    </div>
+  <div class="toggle-group" style="margin-bottom:18px"><div class="tg on">Kubernetes</div><div class="tg">Cloud</div></div>
+
+  <div class="sev-tiles" style="margin-bottom:18px">
+    <div class="sev-tile" style="min-width:150px"><span class="v">980</span><span class="l">Total Failed Resources</span></div>
+    <div class="sev-tile"><span class="v" style="color:var(--sev-crit)">0</span><span class="l">Critical</span></div>
+    <div class="sev-tile"><span class="v" style="color:var(--sev-high)">145</span><span class="l">High</span></div>
+    <div class="sev-tile"><span class="v" style="color:#9a5a00">567</span><span class="l">Medium</span></div>
+    <div class="sev-tile"><span class="v" style="color:var(--sev-low)">268</span><span class="l">Low</span></div>
   </div>
 
   <div class="toolbar">
-    <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">Framework ▾</div>
-    <div class="filter-pill">Provider ▾</div>
-    <div class="filter-pill">+ Add filter</div>
-    <div class="grow"></div>
-    <button class="btn sm">☆ Save filters</button>
+    <div class="filter-pill">Cluster name ▾</div><div class="filter-pill">Provider ▾</div><div class="filter-pill">Last scan ▾</div><div class="filter-pill">Frameworks ▾</div>
+    <div class="grow"></div><button class="btn sm">☆ Save filters</button>
   </div>
-
   <div id="t"></div>
-  <div class="paginator" id="pager"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-  const tot = {Critical:118, High:642, Medium:901, Low:523};
-  document.getElementById("totBar").innerHTML = `${sevbar(tot)}<div style="margin-top:8px">${sevCounts(tot)}</div>`;
-
-  const STATUS = { Connected:"#049d54", Scanning:"#0090ff", Disconnected:"#A2A2A7" };
-  const CL = [
-    {short:"prod-eu-1", prefix:"arn:aws:eks:eu-central-1", provider:"EKS", status:"Connected", nodes:12, date:"Jun 5, 2026", time:"08:14", fw:"All", failed:{Critical:9,High:42,Medium:130,Low:88}},
-    {short:"prod-us-1", prefix:"arn:aws:eks:us-east-1", provider:"EKS", status:"Connected", nodes:9, date:"Jun 5, 2026", time:"08:10", fw:"NSA, CIS, MITRE", failed:{Critical:7,High:31,Medium:96,Low:74}},
-    {short:"staging-eu-1", prefix:"gke_armo_europe-west1", provider:"GKE", status:"Connected", nodes:4, date:"Jun 4, 2026", time:"22:02", fw:"CIS", failed:{Critical:2,High:18,Medium:54,Low:61}},
-    {short:"dev-1", prefix:"aks-armo-dev", provider:"AKS", status:"Scanning", nodes:3, date:"Jun 5, 2026", time:"09:01", fw:"All", failed:{Critical:0,High:9,Medium:41,Low:33}},
+  function fr(o){ return SEV.filter(s=>o[s]!=null).map(s=>`<span class="fr"><i style="background:${SEV_COLOR[s]}"></i>${o[s]}</span>`).join(""); }
+  const CL=[
+    {status:"Healthy",short:"armo-platform-cluster",full:"gke_elated-pottery-310110_us-central1-c",prov:"GKE",nodes:4,date:"Jun 5, 2026",time:"02:00:48 PM",fw:"All",failed:{Critical:0,High:110,Medium:453,Low:229}},
+    {status:"Disconnected",short:"do-fra1-tal-test-k8s",full:"",prov:"DO",nodes:3,date:"Jun 4, 2026",time:"10:06:11 PM",fw:"All",failed:{Critical:0,High:27,Medium:83,Low:24}},
+    {status:"Healthy",short:"armo-cadr-demo-cluster",full:"arn:aws.eks.eu-west-3-015253967648",prov:"EKS",nodes:1,date:"Jun 3, 2026",time:"08:59:03 PM",fw:"All",failed:{Critical:0,High:8,Medium:31,Low:15}},
   ];
-
-  const rows = CL.map(c=>`
-    <tr data-cluster="${c.short}" class="clickable-row" onclick="go('security-risks.html')">
-      <td><span class="status-dot" style="background:${STATUS[c.status]}"></span>${c.status}</td>
-      <td><div class="strong" style="font-size:15px">${c.short}</div><div class="cellsub mono">${c.prefix}</div></td>
-      <td><span class="tag">${c.provider}</span></td>
-      <td class="num">${c.nodes}</td>
-      <td class="muted" style="white-space:nowrap">${c.date}<div class="cellsub">${c.time}</div></td>
-      <td>${c.fw==="All"?'<span class="muted">All</span>':c.fw.split(", ").map(f=>`<span class="tag" style="margin-right:4px">${f}</span>`).join("")}</td>
-      <td style="min-width:220px">${sevbar(c.failed)}<div class="cellsub" style="margin-top:5px">${sevCounts(c.failed)}</div></td>
-    </tr>`).join("");
-  document.getElementById("t").innerHTML = table(
-    [{t:"Status"},{t:"Cluster name"},{t:"Provider"},{t:"Nodes",cls:"num"},{t:"Last scan"},{t:"Frameworks"},{t:"Failed Resources"}], rows);
-
-  document.getElementById("pager").innerHTML =
-    `<span>Clusters 1–${CL.length} of ${CL.length}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
+  const STC={"Healthy":"#049d54","Disconnected":"#e11900"};
+  const rows=CL.map(c=>`<tr data-cluster="${c.short}" class="clickable-row" onclick="go('security-risks.html')">
+    <td><span class="status-dot" style="background:${STC[c.status]}"></span>${c.status}</td>
+    <td class="strong">${c.short}${c.full?`<div class="cellsub mono">${c.full}</div>`:''}</td>
+    <td><span class="tag">${c.prov}</span></td><td class="num">${c.nodes}</td>
+    <td class="muted" style="white-space:nowrap">${c.date}<div class="cellsub">${c.time}</div></td>
+    <td class="muted">${c.fw}</td><td>${fr(c.failed)}</td></tr>`).join("");
+  document.getElementById("t").innerHTML = table([{t:"Status"},{t:"Cluster name"},{t:"Provider"},{t:"Nodes",cls:"num"},{t:"Last scan"},{t:"Frameworks"},{t:"Failed Resources"}], rows);
 </script>
 </body>
 </html>
