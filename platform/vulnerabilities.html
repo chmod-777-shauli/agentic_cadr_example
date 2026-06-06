@@ -9,63 +9,83 @@
 
   <div class="page-head" style="align-items:center">
     <div class="toggle-group" id="tabs">
+      <div class="tg on" data-v="cves">CVEs</div>
       <div class="tg" data-v="workloads">Workloads</div>
-      <div class="tg on" data-v="images">Images</div>
-      <div class="tg" data-v="cves">CVEs</div>
+      <div class="tg" data-v="images">Images</div>
       <div class="tg" data-v="sbom">SBOM</div>
       <div class="tg" data-v="hosts">Hosts</div>
     </div>
-    <div class="page-actions"><button class="btn primary">↻ Scan vulnerabilities</button></div>
+    <div class="page-actions"><div class="spotlight-toggle"><span class="switch off"></span> Risk spotlight</div><button class="btn primary">↻ Scan</button></div>
   </div>
 
-  <div class="toolbar">
-    <div class="filter-pill">Severity ▾</div>
-    <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">In-use ▾</div>
-    <div class="filter-pill">Fixable ▾</div>
-    <div class="filter-pill">+ Add filter</div>
-    <div class="grow"></div>
-    <div class="hotcve-toggle"><span class="switch"></span> Hot CVEs</div>
-    <div class="spotlight-toggle"><span class="switch"></span> Risk spotlight</div>
-  </div>
-
-  <div class="toolbar" style="margin-top:-4px">
-    <span class="count-note" id="cnt"></span>
-    <div class="grow"></div>
-    <button class="btn sm">⤓ Download</button>
-  </div>
-
+  <div class="toolbar" id="filters"></div>
+  <div class="banner info" id="banner" style="margin-bottom:16px"></div>
+  <div id="widgets"></div>
+  <div class="toolbar" style="margin-top:-2px"><span class="count-note" id="cnt"></span><div class="grow"></div><button class="btn sm">⤓ Export</button></div>
   <div id="vbody"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-  function kev(b){ return b?`<span class="chip" style="color:#6b0047;background:#FFE8F3"><span class="dot" style="background:#6b0047"></span>KEV</span>`:'<span class="muted">—</span>'; }
-  function imgSev(o){ return sevbar({Critical:o.c,High:o.h,Medium:o.m,Low:o.l}); }
+  const FILT={
+    cves:["Account","Region","Cluster","Namespace","Workload","CVE ID","Exploitable","Fixable"],
+    workloads:["Cluster","Namespace","Workload","Vulnerabilities","Risk factor","In-use"],
+    images:["Cluster","Namespace","Workload","Image","Vulnerabilities","Risk factor","CVE ID"],
+    sbom:["Component","Version","Type","Image"],
+    hosts:["Account","Region","Host","Vulnerabilities"]
+  };
+  const BANNER={
+    cves:"Displaying 28,292 vulnerabilities. Use the filters to prioritize those that pose a real risk to your organization.",
+    workloads:"Displaying 312 workloads. Use the filters to prioritize those that pose a real risk to your organization.",
+    images:"Displaying 59 images. Use the filters to prioritize those that pose a real risk to your organization.",
+    sbom:"Displaying 1,842 components across your images.",
+    hosts:"Displaying 48 hosts. Use the filters to prioritize those that pose a real risk to your organization."
+  };
+  function cnts(o){ return SEV.filter(s=>o[s]!=null).map(s=>`<span style="color:${SEV_COLOR[s]};font-weight:700;margin-right:12px">${o[s]}</span>`).join(""); }
+
+  const WIDGETS = `
+    <div class="widgets-row" style="grid-template-columns:1.1fr 1.1fr 1.1fr">
+      <div class="card"><div class="widget-title">Vulnerabilities by Severity</div>
+        <div style="display:flex;align-items:center;gap:18px"><div class="kpi-num" style="font-size:26px;margin:0">28,292</div>
+        <div style="flex:1">${sevbar({Critical:947,High:4021,Medium:14235,Low:4532,Negligible:4557})}
+        <div style="margin-top:8px;font-size:12.5px;color:var(--txt-dim)">
+          <div>Critical <b style="color:var(--sev-crit);float:right">947</b></div>
+          <div>High <b style="color:var(--sev-high);float:right">4,021</b></div>
+          <div>Medium <b style="color:#9a5a00;float:right">14,235</b></div>
+          <div>Low <b style="color:var(--sev-low);float:right">4,532</b></div>
+        </div></div></div>
+      </div>
+      <div class="card"><div class="widget-title">Exploited Vulnerabilities by Severity</div>
+        ${hbars([{nm:"Critical",v:251,color:SEV_COLOR.Critical},{nm:"High",v:412,color:SEV_COLOR.High},{nm:"Medium",v:188,color:SEV_COLOR.Medium},{nm:"Low",v:43,color:SEV_COLOR.Low}])}
+      </div>
+      <div class="card"><div class="widget-title">New Vulnerabilities (Last 60 days)</div>
+        <div class="kpi-num" style="font-size:26px;margin:4px 0 10px">5,184</div>
+        ${sevbar({Critical:184,High:902,Medium:2841,Low:1257})}
+        <div class="legend" style="flex-direction:row;gap:14px;margin-top:10px;flex-wrap:wrap"><div class="it"><i style="background:var(--sev-crit)"></i>Critical</div><div class="it"><i style="background:var(--sev-high)"></i>High</div><div class="it"><i style="background:var(--sev-med)"></i>Medium</div><div class="it"><i style="background:var(--sev-low)"></i>Low</div></div>
+      </div>
+    </div>`;
 
   const views = {
     cves(){
-      const rows = CVES.map(c=>`
-        <tr onclick='openCve(${JSON.stringify(c).replace(/'/g,"&#39;")})'>
-          <td class="mono strong">${c.id}</td><td>${sev(c.sev)}</td>
-          <td class="num strong">${c.cvss.toFixed(1)}</td>
-          <td>${kev(c.kev)}</td><td class="num">${(c.epss*100).toFixed(0)}%</td>
-          <td>${c.pkg} <span class="muted">${c.version}</span></td>
-          <td class="mono pass">${c.fix}</td>
-          <td class="num">${c.images}</td><td class="num">${c.workloads}</td></tr>`).join("");
-      return table([{t:"CVE"},{t:"Severity"},{t:"CVSS",cls:"num"},{t:"Exploited"},{t:"EPSS",cls:"num"},{t:"Package"},{t:"Fixed in"},{t:"Images",cls:"num"},{t:"Workloads",cls:"num"}], rows);
+      const rows = CVES.map(c=>`<tr class="clickable-row" onclick="go('vulnerabilities.html')">
+        <td>${sev(c.sev)}</td><td class="mono strong">${c.id}</td><td class="num strong">${c.cvss.toFixed(1)}</td>
+        <td>${c.pkg} <span class="muted">${c.version}</span></td><td class="mono pass">${c.fix}</td>
+        <td>${c.kev?'<span class="chip" style="color:#6b0047;background:#FFE8F3"><span class="dot" style="background:#6b0047"></span>Exploited</span>':'<span class="muted">—</span>'}</td>
+        <td class="muted">Jun 2, 2026</td><td class="num">${c.workloads} wl · ${c.images} img</td></tr>`).join("");
+      return table([{t:"Severity"},{t:"CVE"},{t:"CVSS",cls:"num"},{t:"Component"},{t:"Fixed in"},{t:"Exploitable"},{t:"Discovered"},{t:"Affected",cls:"num"}], rows);
     },
     images(){
-      const rows = VULN_IMAGES.map(i=>`
-        <tr onclick="closeDrawer()"><td class="strong">${i.image}:${i.tag}<div class="cellsub">${i.registry}</div></td>
-        <td style="width:200px">${imgSev(i)}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:i.c,High:i.h,Medium:i.m,Low:i.l})}</div></td>
-        <td class="num">${i.workloads}</td><td class="muted">${i.lastScan}</td></tr>`).join("");
-      return table([{t:"Image"},{t:"Vulnerabilities"},{t:"Workloads",cls:"num"},{t:"Last scan"}], rows);
+      const rows = VULN_IMAGES.map(i=>`<tr class="clickable-row" onclick="closeDrawer()">
+        <td class="strong">${i.registry}/${i.image}<div class="cellsub">:${i.tag}</div></td>
+        <td class="muted">prod-eu-1</td><td class="muted">Jun 5, 2026</td>
+        <td>${cnts({Critical:i.c,High:i.h,Medium:i.m,Low:i.l})}</td>
+        <td>${i.c>1?'<span class="tkt">🎫</span>':''}</td><td class="muted">⋮</td></tr>`).join("");
+      return table([{t:"Image"},{t:"Cluster"},{t:"Last seen"},{t:"Vulnerabilities"},{t:""},{t:""}], rows);
     },
     workloads(){
-      const rows = VULN_WORKLOADS.map(w=>`
-        <tr data-cluster="${w.cluster}" data-namespace="${w.ns}" onclick='openWorkload("${w.name}")'><td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
-        <td style="width:200px">${sevbar({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}<div class="cellsub" style="margin-top:5px">${sevCounts({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}</div></td>
+      const rows = VULN_WORKLOADS.map(w=>`<tr data-cluster="${w.cluster}" class="clickable-row" onclick='openWorkload("${w.name}")'>
+        <td class="strong">${w.name}<div class="cellsub">${w.kind} · ${w.ns} · ${w.cluster}</div></td>
+        <td>${cnts({Critical:w.c,High:w.h,Medium:w.m,Low:w.l})}</td>
         <td>${w.inUse?'<span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span>':'<span class="muted">Not in use</span>'}</td></tr>`).join("");
       return table([{t:"Workload"},{t:"Vulnerabilities"},{t:"Runtime"}], rows);
     },
@@ -74,32 +94,20 @@
       return table([{t:"Component"},{t:"Version"},{t:"Type"},{t:"Images",cls:"num"}], pkgs.map(p=>`<tr><td class="strong">${p[0]}</td><td class="mono">${p[1]}</td><td><span class="tag">${p[2]}</span></td><td class="num">${p[3]}</td></tr>`).join(""));
     },
     hosts(){
-      const hosts=[["ip-10-2-31-4","prod-eu-1","Bottlerocket 1.19",2,9],["ip-10-4-12-9","prod-us-1","Amazon Linux 2",1,14],["ip-10-2-9-1","staging-eu-1","Ubuntu 22.04",0,7]];
-      return table([{t:"Host"},{t:"Cluster"},{t:"OS"},{t:"Critical",cls:"num"},{t:"High",cls:"num"}], hosts.map(h=>`<tr><td class="strong mono">${h[0]}</td><td class="muted">${h[1]}</td><td>${h[2]}</td><td class="num" style="color:var(--sev-crit);font-weight:700">${h[3]}</td><td class="num" style="color:var(--sev-high);font-weight:700">${h[4]}</td></tr>`).join(""));
+      const hosts=[["ip-10-2-31-4","prod-eu-1","Bottlerocket 1.19",{Critical:2,High:9,Medium:14,Low:7}],["ip-10-4-12-9","prod-us-1","Amazon Linux 2",{Critical:1,High:14,Medium:22,Low:11}],["ip-10-2-9-1","staging-eu-1","Ubuntu 22.04",{Critical:0,High:7,Medium:18,Low:9}]];
+      return table([{t:"Host"},{t:"Cluster"},{t:"OS"},{t:"Vulnerabilities"}], hosts.map(h=>`<tr><td class="strong mono">${h[0]}</td><td class="muted">${h[1]}</td><td>${h[2]}</td><td>${cnts(h[3])}</td></tr>`).join(""));
     }
   };
-  function show(v){ document.getElementById("vbody").innerHTML = views[v](); document.querySelectorAll("#tabs .tg").forEach(t=>t.classList.toggle("on",t.dataset.v===v)); document.getElementById("cnt").textContent = document.querySelectorAll("#vbody tbody tr").length + " results"; if(window.applyClusterFilter) window.applyClusterFilter(); }
-  document.querySelectorAll("#tabs .tg").forEach(t=>t.onclick=()=>show(t.dataset.v));
-  show("images");
 
-  function openCve(c){
-    openDrawer(`<div class="drawer-head"><div>${sev(c.sev)} ${kev(c.kev)}<h2 class="mono">${c.id}</h2></div><div class="x" onclick="closeDrawer()">✕</div></div>
-      <div class="drawer-body">
-        <div class="grid cols-3">
-          <div class="card kpi"><div class="kpi-label">CVSS</div><div class="kpi-num" style="font-size:24px">${c.cvss.toFixed(1)}</div></div>
-          <div class="card kpi"><div class="kpi-label">EPSS</div><div class="kpi-num" style="font-size:24px">${(c.epss*100).toFixed(0)}%</div></div>
-          <div class="card kpi"><div class="kpi-label">Fix</div><div class="kpi-num pass" style="font-size:16px;margin-top:10px">${c.fix}</div></div>
-        </div>
-        <div class="section-label">Package</div>
-        <div class="kv"><div class="k">Package</div><div class="v">${c.pkg}</div><div class="k">Installed</div><div class="v mono">${c.version}</div><div class="k">Fixed in</div><div class="v mono pass">${c.fix}</div><div class="k">Known-exploited</div><div class="v">${c.kev?'Yes (CISA KEV)':'No'}</div></div>
-        <div class="section-label">Affected (${c.workloads} workloads · ${c.images} images)</div>
-        <div class="tbl-wrap"><table class="tbl"><tbody>
-          <tr onclick='openWorkload("payments-api")'><td class="elink">payments-api</td><td class="muted">payments · prod-eu-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
-          <tr onclick='openWorkload("edge-proxy")'><td class="elink">edge-proxy</td><td class="muted">prod · prod-us-1</td><td><span class="chip" style="color:#049d54;background:#E4F6EC"><span class="dot" style="background:#049d54"></span>In use</span></td></tr>
-        </tbody></table></div>
-        <div style="display:flex;gap:8px;margin-top:18px"><button class="btn primary" onclick="toast('Ticket created for '+c.id)">Create ticket</button><button class="btn" onclick="go('risk-acceptance.html')">Accept risk</button></div>
-      </div>`);
+  function show(v){
+    document.getElementById("filters").innerHTML = FILT[v].map(f=>`<div class="filter-pill">${f} ▾</div>`).join("")+'<div class="filter-pill">+ Add filter</div><div class="grow"></div><button class="btn sm">☆ Save filters</button>';
+    document.getElementById("banner").innerHTML = `📊 ${BANNER[v]}`;
+    document.getElementById("widgets").innerHTML = v==="cves"?WIDGETS:"";
+    document.getElementById("vbody").innerHTML = views[v]();
+    document.querySelectorAll("#tabs .tg").forEach(t=>t.classList.toggle("on",t.dataset.v===v));
+    document.getElementById("cnt").textContent = "Showing "+document.querySelectorAll("#vbody tbody tr").length+" of "+({cves:"28,292 CVEs",workloads:"312 workloads",images:"59 images",sbom:"1,842 components",hosts:"48 hosts"})[v];
   }
+  document.querySelectorAll("#tabs .tg").forEach(t=>t.onclick=()=>show(t.dataset.v)); show("cves");
 </script>
 </body>
 </html>
