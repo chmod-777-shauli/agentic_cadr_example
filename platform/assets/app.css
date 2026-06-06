@@ -175,6 +175,12 @@ a:hover { text-decoration: underline; }
 .ac-node.danger { border-color: var(--sev-high); }
 .ac-node .nd { width: 7px; height: 7px; border-radius: 50%; background: var(--brand-accent); }
 .ac-node.danger .nd { background: var(--sev-high); }
+.ac-flow { display:flex; align-items:flex-start; justify-content:center; gap:0; }
+.ac-stage { display:flex; flex-direction:column; align-items:center; gap:7px; }
+.ac-stage .lbl { font-size:10px; color:var(--txt-faint); font-weight:600; white-space:nowrap; }
+.ac-stage .nd { width:36px; height:36px; border-radius:50%; border:1.5px solid var(--line); display:grid; place-items:center; background:#fff; font-size:15px; }
+.ac-stage.danger .nd { border-color:var(--sev-high); color:var(--sev-high); }
+.ac-arrow { color:#c3cbe0; margin-top:22px; padding:0 8px; }
 .spotlight-toggle { display: inline-flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 600; color: var(--txt-dim); }
 .switch { width: 36px; height: 20px; border-radius: 999px; background: var(--brand); position: relative; display:inline-block; }
 .switch::after { content:""; position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%; background:#fff; }

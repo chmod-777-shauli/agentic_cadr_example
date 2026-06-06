@@ -7,27 +7,26 @@
 </head>
 <body data-page="security-risks" data-title="Security Risks">
 
-  <div class="page-head">
+  <div class="page-head" style="align-items:center">
     <div><h1>Security Risks</h1></div>
     <div class="page-actions"><button class="btn primary">↻ Scan all</button></div>
   </div>
 
-  <div class="banner info" style="margin-bottom:22px">✦ Smart Remediation — fix the most impactful risks first. <a style="margin-left:6px">Enable smart remediation →</a></div>
+  <div class="banner info" style="margin-bottom:18px;justify-content:space-between">
+    <span>✦ <b style="margin:0 4px">Smart Remediation:</b> 6 risks generating 167 issues can be safely fixed without disrupting your workloads.</span>
+    <button class="btn sm" style="background:#fff">Show Smart Remediation</button>
+  </div>
 
   <div class="toolbar">
-    <div class="filter-pill">Severity ▾</div>
-    <div class="filter-pill">Category ▾</div>
-    <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">Namespace ▾</div>
-    <div class="filter-pill">+ Add filter</div>
-    <div class="grow"></div>
-    <button class="btn sm">☆ Save filters</button>
+    <div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div><div class="filter-pill">Workload ▾</div>
+    <div class="filter-pill">Severity ▾</div><div class="filter-pill">Risk category ▾</div><div class="filter-pill">Smart remediation ▾</div><div class="filter-pill">Ticket ▾</div>
+    <div class="grow"></div><button class="btn sm">☆ Save filters</button>
   </div>
 
   <div class="widgets-row">
-    <div class="card"><div class="widget-title">Security risk severities</div><div id="wSev"></div></div>
-    <div class="card"><div class="widget-title">Categories</div><div id="wCat"></div></div>
-    <div class="card"><div class="widget-title">Trends (30d)</div><div id="wTrend"></div></div>
+    <div class="card"><div class="widget-title">Issues by Risk Severity</div><div class="gauge-row"><div id="wDonut"></div><div id="wLegend" style="flex:1"></div></div></div>
+    <div class="card"><div class="widget-title">Risk Categories Overview</div><div id="wCat"></div></div>
+    <div class="card"><div class="widget-title">New vs Resolved · Open Issues</div><div id="wTrend"></div></div>
   </div>
 
   <div id="riskTable"></div>
@@ -36,21 +35,21 @@
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
-  // ---- widgets ----
-  const sc={}; SEV.forEach(s=>sc[s]=0); SECURITY_RISKS.forEach(r=>sc[r.sev]++);
-  document.getElementById("wSev").innerHTML =
-    sevbar(sc) + '<div style="margin-top:10px">' +
-    SEV.filter(s=>sc[s]).map(s=>`<div class="sevtile"><span class="sevstrip" style="height:14px;width:5px;background:${SEV_COLOR[s]}"></span>${s}<span class="n">${sc[s]}</span></div>`).join("") + '</div>';
+  // ---- widgets (match real screen: donut + categories list + new/resolved & open) ----
+  const issueSeg=[{label:"Critical",value:57,color:SEV_COLOR.Critical},{label:"High",value:31,color:SEV_COLOR.High},{label:"Medium",value:88,color:SEV_COLOR.Medium},{label:"Low",value:187,color:SEV_COLOR.Low}];
+  document.getElementById("wDonut").innerHTML = donut(issueSeg);
+  document.getElementById("wLegend").innerHTML = legend(issueSeg);
 
-  const cats={}; SECURITY_RISKS.forEach(r=>cats[r.category]=(cats[r.category]||0)+1);
-  document.getElementById("wCat").innerHTML = hbars(Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([nm,v])=>({nm,v})), "#053CA1");
+  const cats=[["Workloads",4],["RBAC configuration",38],["Network configuration",21],["Attack path",7],["Secret management",12],["Vulnerabilities",85]];
+  document.getElementById("wCat").innerHTML = cats.map(([nm,v])=>`<div class="rank" style="border-top:1px solid var(--line-soft);padding:8px 0"><div class="nm">${nm}</div><div class="ct">${v}</div></div>`).join("");
 
   document.getElementById("wTrend").innerHTML =
-    `<svg class="spark" viewBox="0 0 160 56" preserveAspectRatio="none" style="height:56px">
+    `<svg class="spark" viewBox="0 0 160 50" preserveAspectRatio="none" style="height:50px">
       <polyline fill="none" stroke="#e11900" stroke-width="2.2" points="0,38 20,33 40,36 60,26 80,29 100,21 120,24 140,15 160,19"/>
       <polyline fill="none" stroke="#049d54" stroke-width="2.2" points="0,48 20,46 40,45 60,43 80,41 100,40 120,38 140,37 160,35"/>
     </svg>
-    <div class="legend" style="flex-direction:row;gap:18px;margin-top:8px"><div class="it"><i style="background:#e11900"></i>New</div><div class="it"><i style="background:#049d54"></i>Resolved</div></div>`;
+    <div class="legend" style="flex-direction:row;gap:18px;margin:8px 0 12px"><div class="it"><i style="background:#e11900"></i>New <span class="v" style="margin-left:4px">+24</span></div><div class="it"><i style="background:#049d54"></i>Resolved <span class="v" style="margin-left:4px">-46</span></div></div>
+    <div style="border-top:1px solid var(--line-soft);padding-top:10px;display:flex;align-items:baseline;gap:8px"><span class="kpi-num" style="font-size:24px;margin:0">363</span><span class="muted">open issues</span></div>`;
 
   // ---- table ----
   const dlt=(n,dir)=> n>0 ? `<span class="dlt ${dir}">${dir==="up"?"▲ +":"▼ -"}${n}</span>` : `<span class="dlt zero">0</span>`;

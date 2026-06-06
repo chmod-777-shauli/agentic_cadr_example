@@ -7,59 +7,48 @@
 </head>
 <body data-page="attack-path" data-title="Attack Path">
 
-  <div class="page-head">
+  <div class="page-head" style="align-items:center">
     <div><h1>Attack Path</h1></div>
     <div class="page-actions"><button class="btn primary">↻ Scan all</button></div>
   </div>
 
   <div class="toolbar">
-    <div class="filter-pill">Cluster ▾</div>
-    <div class="filter-pill">Namespace ▾</div>
-    <div class="filter-pill">Severity ▾</div>
-    <div class="grow"></div>
-    <div class="spotlight-toggle"><span class="switch"></span> Risk spotlight</div>
+    <div class="filter-pill">Cluster ▾</div><div class="filter-pill">Namespace ▾</div><div class="filter-pill">Workload ▾</div>
+    <div class="filter-pill">First seen ▾</div><div class="filter-pill">Internet exposure ▾</div>
+    <div class="grow"></div><span class="muted" style="font-size:13px">Clear filters</span>
   </div>
 
   <div id="acList"></div>
-  <div class="paginator" id="pager"></div>
 
 <script src="assets/data.js"></script>
 <script src="assets/shell.js"></script>
 <script>
   const CHAINS = [
-    {id:"ac1", desc:"Internet-exposed payments-api can be reached and exploited to read cluster secrets", cluster:"prod-eu-1", ns:"payments", workload:"payments-api", firstSeen:"Jun 2, 2026", isNew:true,
-     nodes:[{x:14,y:50,l:"🌐 Internet",d:1},{x:42,y:50,l:"payments-api",d:1},{x:72,y:32,l:"service-account"},{x:86,y:70,l:"🔑 secrets",d:1}], edges:[[0,1],[1,2],[2,3],[1,3]]},
-    {id:"ac2", desc:"Public web-frontend allows lateral movement leading to RBAC privilege escalation", cluster:"prod-us-1", ns:"prod", workload:"web-frontend", firstSeen:"Jun 4, 2026", isNew:true,
-     nodes:[{x:14,y:50,l:"🌐 Internet",d:1},{x:40,y:50,l:"web-frontend",d:1},{x:66,y:35,l:"pod"},{x:88,y:60,l:"cluster-admin",d:1}], edges:[[0,1],[1,2],[2,3]]},
-    {id:"ac3", desc:"Exposed auth-service exposes database credentials to an external attacker", cluster:"prod-us-1", ns:"auth", workload:"auth-service", firstSeen:"May 30, 2026", isNew:false,
-     nodes:[{x:14,y:50,l:"🌐 LB",d:1},{x:44,y:50,l:"auth-service",d:1},{x:80,y:50,l:"🔑 DB creds",d:1}], edges:[[0,1],[1,2]]},
-    {id:"ac4", desc:"Compromised pod can reach cluster-admin via a default service account token", cluster:"prod-eu-1", ns:"kube-system", workload:"sa-token", firstSeen:"Jun 1, 2026", isNew:false,
-     nodes:[{x:18,y:50,l:"pod",d:1},{x:54,y:50,l:"default SA"},{x:86,y:50,l:"cluster-admin",d:1}], edges:[[0,1],[1,2]]},
+    {id:"ac1", fs:"Jan 2, 2025 14:48:36", title:"External workload with cluster takeover roles", cluster:"armo-platform-cluster", workload:"public-web",
+     stages:[{l:"Internet",i:"🌐",d:1},{l:"Initial Access",i:"↘",d:1},{l:"Execution",i:"⚙"},{l:"Privilege Esc.",i:"⬆",d:1},{l:"Cluster takeover",i:"☸",d:1}]},
+    {id:"ac2", fs:"Jan 2, 2025 14:46:30", title:"Exposed public-web2 with critical vulnerabilities and 5 severe impacts", cluster:"armo-platform-cluster", workload:"public-web2",
+     stages:[{l:"Internet",i:"🌐",d:1},{l:"Initial Access",i:"↘",d:1},{l:"Execution (images)",i:"📦",d:1},{l:"Secret Access",i:"🔑",d:1}]},
+    {id:"ac3", fs:"Jan 2, 2025 13:55:01", title:"External workload with sensitive data exposure", cluster:"armo-platform-cluster", workload:"checkout",
+     stages:[{l:"Internet",i:"🌐",d:1},{l:"Initial Access",i:"↘",d:1},{l:"Data Access",i:"🗄",d:1}]},
+    {id:"ac4", fs:"Jan 1, 2025 22:10:09", title:"Compromised pod can reach cluster-admin via default service account", cluster:"prod-eu-1", workload:"sa-token",
+     stages:[{l:"Pod",i:"⬢"},{l:"Service Account",i:"👤"},{l:"Cluster-admin",i:"☸",d:1}]},
   ];
-
-  function miniGraph(c){
-    const W=420,H=120;
-    let svg=`<svg width="100%" height="100%" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="position:absolute;inset:0">`;
-    c.edges.forEach(([a,b])=>{ svg+=`<line x1="${c.nodes[a].x/100*W}" y1="${c.nodes[a].y/100*H}" x2="${c.nodes[b].x/100*W}" y2="${c.nodes[b].y/100*H}" stroke="#c3cbe0" stroke-width="2"/>`; });
-    svg+=`</svg>`;
-    return svg + c.nodes.map(n=>`<div class="ac-node ${n.d?'danger':''}" style="left:${n.x}%;top:${n.y}%"><span class="nd"></span>${n.l}</div>`).join("");
+  function flow(c){
+    return `<div class="ac-flow">`+c.stages.map((s,idx)=>`
+      <div class="ac-stage ${s.d?'danger':''}"><span class="lbl">${s.l}</span><span class="nd">${s.i}</span></div>
+      ${idx<c.stages.length-1?'<span class="ac-arrow">→</span>':''}`).join("")+`</div>`;
   }
-
   document.getElementById("acList").innerHTML = CHAINS.map(c=>`
-    <div class="ac-card" data-cluster="${c.cluster}" data-namespace="${c.ns}" onclick='openWorkload("${c.workload}")'>
+    <div class="ac-card" onclick='openWorkload("${c.workload}")'>
       <div>
-        <div class="ac-fs">First seen: ${c.firstSeen} ${c.isNew?'<span class="ac-new">NEW</span>':''}</div>
-        <div class="ac-desc">${c.desc}</div>
+        <div class="ac-fs">First seen: ${c.fs}</div>
+        <div class="ac-desc">${c.title}</div>
         <div class="ac-meta"><b>Cluster:</b> ${c.cluster}</div>
-        <div class="ac-meta"><b>Namespace:</b> ${c.ns}</div>
         <div class="ac-meta"><b>Workload:</b> ${c.workload}</div>
       </div>
-      <div class="ac-graph">${miniGraph(c)}</div>
+      ${flow(c)}
       <div><button class="btn primary" onclick="event.stopPropagation();toast('Opening remediation for ${c.workload}')">🔧 Fix</button></div>
     </div>`).join("");
-
-  document.getElementById("pager").innerHTML =
-    `<span>Attack paths 1–${CHAINS.length} of ${CHAINS.length}</span><span class="pg-btn">«</span><span class="pg-btn">‹</span><span class="pg-btn">›</span><span class="pg-btn">»</span>`;
 </script>
 </body>
 </html>
